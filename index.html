@@ -452,13 +452,19 @@ function seedDemo() {
   };
 }
 
+// Chuẩn hoá dữ liệu từ server: trạng thái lạ → Chưa trả, chỉ nhận tháng dạng YYYY-MM
+function setData(j) {
+  j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
+  const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
+  Object.assign(S, { items: j.items, history: j.history, months, income: j.income || [], lastIncome: j.lastIncome || [] });
+}
+
 async function load(silent) {
   if (!S.user || (!DEMO && !S.pin)) return;
   if (!silent) S.loading = true, render();
   try {
     const j = await call('list');
-    j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
-    Object.assign(S, { items: j.items, history: j.history, months: j.months, income: j.income || [], lastIncome: j.lastIncome || [] });
+    setData(j);
   } catch (e) {
     if (/Sai mã PIN/.test(e.message)) { S.pin = ''; LS.set('ct_pin', ''); openWho(); }
     if (!silent) toast(e.message || 'Không tải được dữ liệu', true);
@@ -470,8 +476,7 @@ async function mutate(action, payload, msg) {
   S.busy = true;
   try {
     const j = await call(action, payload);
-    j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
-    Object.assign(S, { items: j.items, history: j.history, months: j.months, income: j.income || [], lastIncome: j.lastIncome || [] });
+    setData(j);
     if (msg) toast(msg);
   } catch (e) { toast(e.message || 'Lưu thất bại', true); await load(true); }
   S.busy = false; render();
