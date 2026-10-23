@@ -15,14 +15,25 @@ const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'upd
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
 const HIST_H = ['ts', 'user', 'month', 'itemId', 'itemName', 'action', 'field', 'oldValue', 'newValue'];
 
+// doGet/doPost chỉ chạy khi có request tới URL /exec. Bấm ▶ Run trong editor thì e = undefined.
 function doGet(e) {
-  return handle_(e.parameter || {});
+  return handle_((e && e.parameter) || {});
 }
 
 function doPost(e) {
   let p = {};
   try { p = JSON.parse(e.postData.contents); } catch (_) {}
   return handle_(p);
+}
+
+// Chọn hàm này rồi bấm ▶ Run để kiểm tra cấu hình: tạo sẵn 3 tab và báo PIN đã đặt chưa (xem Execution log).
+function setup() {
+  sheet_('Items', ITEM_H);
+  sheet_('Income', INC_H);
+  sheet_('History', HIST_H);
+  const pin = PropertiesService.getScriptProperties().getProperty('PIN');
+  Logger.log(pin ? '✅ Đã tạo tab Items/Income/History. PIN đã đặt (' + pin.length + ' ký tự).'
+                 : '⚠️ Đã tạo tab, nhưng CHƯA đặt PIN: Project Settings → Script properties → thêm PIN.');
 }
 
 function handle_(p) {
