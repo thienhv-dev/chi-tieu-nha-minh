@@ -129,9 +129,12 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .lg span{display:inline-flex;align-items:center;gap:6px}
 .lg i{width:9px;height:9px;border-radius:50%}
 .lg b{color:var(--ink);font-weight:600}
-.sal{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;font-size:14px;margin:-4px 0 16px}
-.sal > span{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
-.sal b{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.tile{display:block;background:var(--card2);border-radius:14px;padding:11px 13px;text-align:left;min-width:0}
+.tile .lbl{display:flex;align-items:center;justify-content:space-between}
+.tile .lbl svg{width:14px;height:14px;color:var(--blue)}
+.tile b{display:block;font-size:20px;font-weight:700;margin-top:2px}
+.tile small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inc-row{display:flex;gap:8px;margin-bottom:10px}
 .inc-row input{font:inherit;color:inherit;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 12px;font-size:16px;outline:none;min-width:0}
 .inc-row .nm{flex:1.3}
@@ -139,7 +142,6 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .x{width:36px;flex:none;color:var(--muted);font-size:22px;line-height:1}
 .addrow{color:var(--blue);font-weight:600;font-size:15px;padding:4px 0 14px}
 .inc-sum{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-size:15px}
-.sal button{margin-left:auto;color:var(--blue);font-weight:600;font-size:13px}
 .ct h3 .cnt{font-size:13px;font-weight:600;background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
 .due{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .ct + .due{border-top:0;padding-top:0}
@@ -351,6 +353,7 @@ const ICON = {
   pie: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
   hist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
   coin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-.8-1.5-1.3-2.8-1.3-1.7 0-2.8.8-2.8 2s1.2 1.7 2.8 2.1 2.8.9 2.8 2.1-1.1 2-2.8 2c-1.3 0-2.4-.5-2.9-1.4M12 6v1.9M12 16.1V18"/></svg>',
   chev: '<svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m1.5 1.5 5.5 5.5-5.5 5.5"/></svg>',
   ok: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#22a447"/><path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -523,12 +526,11 @@ function monthCard(t) {
       ${t.n.all ? `<span class="badge ${t.none ? 's-none' : 's-paid'}">${t.none ? t.n.none + ' khoản chờ' : '✓ Xong tháng'}</span>` : ''}</div>
     ${has ? `<div class="lbl">${left >= 0 ? 'Còn dư' : 'Chi vượt thu nhập'}</div>
       <div class="big ${left < 0 ? 'neg' : ''}">${left < 0 ? '−' : ''}${bigNum(Math.abs(left))}</div>
-      <div class="stats">
-        <div><span class="lbl">Thu</span><b>${cstr(inc)}</b></div>
-        <div><span class="lbl">Chi</span><b>${cstr(t.active)}</b></div>
-        <div><span class="lbl">Đã chi</span><b>${Math.round(t.active / inc * 100)}%</b></div>
-      </div>
-      <div class="sal">${S.income.map(x => `<span>${esc(x.name)} <b>${cstr(x.amount)}</b></span>`).join('')}<button data-income>Sửa thu nhập</button></div>`
+      <div class="tiles">
+        <button class="tile" data-income aria-label="Sửa thu nhập"><span class="lbl">Thu ${ICON.edit}</span><b>${cstr(inc)}</b>
+          <small>${esc(S.income.filter(x => Number(x.amount)).map(x => `${x.name} ${cstr(x.amount)}`).join(' · ')) || 'Chưa có khoản thu'}</small></button>
+        <div class="tile"><span class="lbl">Chi</span><b>${cstr(t.active)}</b><small>${inc ? Math.round(t.active / inc * 100) + '% thu nhập' : '—'}</small></div>
+      </div>`
     : `<div class="lbl">Tổng chi</div><div class="big">${bigNum(t.active)}</div>
       <div class="inc-empty" style="margin-bottom:14px"><span class="lbl">Chưa nhập thu nhập để tính còn dư</span><button class="btn sm" data-income>Nhập thu nhập</button></div>`}
     ${t.all ? `<div class="split">${seg(t.paid, 'var(--green)')}${seg(t.none, 'var(--line)')}${seg(t.skip, 'var(--orange)')}</div>
