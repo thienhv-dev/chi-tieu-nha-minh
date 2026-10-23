@@ -75,7 +75,7 @@ function sheet_(name, headers) {
     s = ss.insertSheet(name);
     // Để dạng text, tránh Sheets tự đổi "2026-10" thành ngày
     s.getRange(1, 1, s.getMaxRows(), headers.length).setNumberFormat('@');
-    s.appendRow(headers);
+    s.getRange(1, 1, 1, headers.length).setValues([headers]);
     s.setFrozenRows(1);
     s.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#808080').setFontColor('#ffffff');
   } else if (s.getLastColumn() < headers.length) {
@@ -88,12 +88,26 @@ function sheet_(name, headers) {
   return s;
 }
 
+// Ghi thêm dòng mới. KHÔNG dùng appendRow: nó bỏ qua định dạng text và tự đổi "2026-10" thành ngày.
+function append_(s, rows) {
+  if (!rows.length) return;
+  const r = s.getRange(s.getLastRow() + 1, 1, rows.length, rows[0].length);
+  r.setNumberFormat('@');
+  r.setValues(rows.map(row => row.map(v => v === undefined || v === null ? '' : String(v))));
+}
+
 function rows_(s, headers) {
   const v = s.getDataRange().getValues();
+  const tz = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
   const out = [];
   for (let i = 1; i < v.length; i++) {
     const o = { _row: i + 1 };
-    headers.forEach((h, j) => { o[h] = v[i][j]; });
+    headers.forEach((h, j) => {
+      let x = v[i][j];
+      // Ô đã lỡ bị Sheets đổi thành ngày → trả về dạng chuỗi như lúc ghi
+      if (x instanceof Date) x = h === 'month' ? Utilities.formatDate(x, tz, 'yyyy-MM') : x.toISOString();
+      o[h] = x;
+    });
     out.push(o);
   }
   return out;
@@ -127,10 +141,10 @@ function list_(month) {
 }
 
 function log_(user, month, item, action, field, oldV, newV) {
-  sheet_('History', HIST_H).appendRow([
+  append_(sheet_('History', HIST_H), [[
     new Date().toISOString(), user, month, item.id || '', item.name || '', action, field || '',
     oldV === undefined ? '' : String(oldV), newV === undefined ? '' : String(newV),
-  ]);
+  ]]);
 }
 
 function save_(item, user) {
@@ -145,13 +159,13 @@ function save_(item, user) {
       if (a !== b) log_(user, cur.month, { id: cur.id, name: item.name || cur.name }, 'update', f, a, b);
     });
     const next = Object.assign(clean_(cur), item, { updatedAt: now, updatedBy: user });
-    s.getRange(cur._row, 1, 1, ITEM_H.length).setValues([ITEM_H.map(h => next[h])]);
+    s.getRange(cur._row, 1, 1, ITEM_H.length).setNumberFormat('@').setValues([ITEM_H.map(h => String(next[h]))]);
   } else {
     const order = Math.max(0, ...all.filter(r => String(r.month) === item.month).map(r => Number(r.order) || 0)) + 1;
     const next = clean_(Object.assign({ order: order, status: 'none' }, item, {
       id: Utilities.getUuid().slice(0, 8), updatedAt: now, updatedBy: user,
     }));
-    s.appendRow(ITEM_H.map(h => next[h]));
+    append_(s, [ITEM_H.map(h => next[h])]);
     log_(user, next.month, next, 'create', '', '', next.amount);
   }
 }
@@ -173,7 +187,7 @@ function bulk_(month, items, user, label) {
       amount: it.amount, status: 'none', note: it.note || '', due: it.due, updatedAt: now, updatedBy: user });
     return ITEM_H.map(h => o[h]);
   });
-  if (rows.length) s.getRange(s.getLastRow() + 1, 1, rows.length, ITEM_H.length).setValues(rows);
+  append_(s, rows);
   log_(user, month, {}, 'bulk', '', '', label + ' · ' + rows.length + ' khoản');
 }
 
@@ -205,5 +219,5 @@ function setIncome_(month, list, user) {
   });
   Object.keys(old).forEach(n => { if (!(n in neu)) log_(user, month, { name: n }, 'income', 'amount', old[n], ''); });
   cur.map(r => r._row).sort((a, b) => b - a).forEach(r => s.deleteRow(r));
-  if (next.length) s.getRange(s.getLastRow() + 1, 1, next.length, INC_H.length).setValues(next.map(x => [month, x.name, x.amount, now, user]));
+  append_(s, next.map(x => [month, x.name, x.amount, now, user]));
 }
