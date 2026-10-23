@@ -2,6 +2,7 @@
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
  * Tab "Items"   : các khoản chi theo tháng
  * Tab "Income"  : các khoản thu theo tháng (tên + số tiền)
+ * Tab "Types"   : danh sách loại khoản chi (tên, số tiền, hạn mặc định) — để chọn nhanh và "Tạo từ mẫu"
  * Tab "History" : lịch sử mọi thay đổi (ai, lúc nào, đổi gì)
  *
  * Triển khai: Extensions → Apps Script → dán file này → Deploy → New deployment → Web app
@@ -13,6 +14,7 @@
 
 const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due'];
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
+const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
 const HIST_H = ['ts', 'user', 'month', 'itemId', 'itemName', 'action', 'field', 'oldValue', 'newValue'];
 
 // doGet/doPost chỉ chạy khi có request tới URL /exec. Bấm ▶ Run trong editor thì e = undefined.
@@ -30,9 +32,10 @@ function doPost(e) {
 function setup() {
   sheet_('Items', ITEM_H);
   sheet_('Income', INC_H);
+  sheet_('Types', TYPE_H);
   sheet_('History', HIST_H);
   const pin = PropertiesService.getScriptProperties().getProperty('PIN');
-  Logger.log(pin ? '✅ Đã tạo tab Items/Income/History. PIN đã đặt (' + pin.length + ' ký tự).'
+  Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types/History. PIN đã đặt (' + pin.length + ' ký tự).'
                  : '⚠️ Đã tạo tab, nhưng CHƯA đặt PIN: Project Settings → Script properties → thêm PIN.');
 }
 
@@ -53,6 +56,7 @@ function handle_(p) {
         case 'bulkCreate': bulk_(p.month, p.items || [], user, 'Tạo từ mẫu'); break;
         case 'copyMonth': copy_(p.from, p.month, user); break;
         case 'setIncome': setIncome_(p.month, p.income || [], user); break;
+        case 'setTypes': setTypes_(p.types || [], p.month, user); break;
         default: return out_({ ok: false, error: 'Unknown action' });
       }
     } finally {
@@ -129,8 +133,11 @@ function list_(month) {
   const months = Array.from(new Set(items.map(r => String(r.month)).concat(inc.map(r => String(r.month))))).sort();
   const incOf = m => inc.filter(r => String(r.month) === m).map(r => ({ name: String(r.name), amount: Number(r.amount) || 0 }));
   const prev = Array.from(new Set(inc.map(r => String(r.month)))).filter(m => m < month).sort().pop();
+  const types = rows_(sheet_('Types', TYPE_H), TYPE_H).sort((a, b) => Number(a.order) - Number(b.order))
+    .map(r => ({ name: String(r.name), amount: Number(r.amount) || 0, due: Number(r.due) || '' }));
   return {
     months: months,
+    types: types,
     income: incOf(month),
     lastIncome: prev ? incOf(prev) : [],
     items: items.filter(r => String(r.month) === month).map(clean_).sort((a, b) => a.order - b.order),
@@ -220,4 +227,16 @@ function setIncome_(month, list, user) {
   Object.keys(old).forEach(n => { if (!(n in neu)) log_(user, month, { name: n }, 'income', 'amount', old[n], ''); });
   cur.map(r => r._row).sort((a, b) => b - a).forEach(r => s.deleteRow(r));
   append_(s, next.map(x => [month, x.name, x.amount, now, user]));
+}
+
+// Thay toàn bộ danh sách loại khoản chi (không theo tháng)
+function setTypes_(list, month, user) {
+  const s = sheet_('Types', TYPE_H);
+  const n = s.getLastRow();
+  if (n > 1) s.getRange(2, 1, n - 1, TYPE_H.length).clearContent();
+  const now = new Date().toISOString();
+  const rows = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' }))
+    .filter(x => x.name).map((x, i) => [i + 1, x.name, x.amount, x.due, now, user]);
+  append_(s, rows);
+  log_(user, month, { name: 'Loại khoản chi' }, 'types', '', '', rows.length);
 }

@@ -7,7 +7,7 @@ Mở `index.html` khi chưa cấu hình `API_URL` = **chế độ demo** (lưu t
 
 ```
 index.html  ──fetch──▶  Apps Script Web App (/exec)  ──▶  Google Sheet
-(GitHub Pages)          kiểm tra PIN, ghi lịch sử         tab Items · Income · History
+(GitHub Pages)          kiểm tra PIN, ghi lịch sử         tab Items · Income · Types · History
 ```
 
 ## 1. Tạo DB + backend (Google Sheet + Apps Script)
@@ -23,12 +23,13 @@ index.html  ──fetch──▶  Apps Script Web App (/exec)  ──▶  Google
    (cảnh báo này bình thường vì script do chính bạn viết).
 6. Copy **Web app URL** (đuôi `/exec`).
 
-Script tự tạo 3 tab ở lần gọi đầu tiên:
+Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup` rồi bấm ▶ Run):
 
 | Tab | Cột | Ý nghĩa |
 |---|---|---|
 | `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng) |
 | `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
+| `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: chọn nhanh khi thêm khoản + dùng cho "Tạo từ mẫu" |
 | `History` | ts, user, month, itemId, itemName, action, field, oldValue, newValue | Ai đổi gì, lúc nào |
 
 > Kiểm tra nhanh: mở `<URL>/exec?action=list&key=<PIN>&month=2026-10` trên trình duyệt → thấy `{"ok":true,...}` là chạy.
@@ -67,10 +68,12 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 
 - Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
 - **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
-- **Khoản chi**: chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
+- **Loại khoản chi** (tab Khoản chi → *Loại khoản chi*): danh sách tên + số tiền + hạn mặc định.
+  Khi thêm khoản, ô tên vừa **chọn từ danh sách** (tự điền tiền/hạn) vừa **gõ tên mới** (tick để lưu thành loại).
+- **Khoản chi**: bảng tóm tắt dự kiến chi / đã trả / thu nhập / dư-âm; chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
 - **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).
-- Tháng mới trống: **Sao chép từ tháng trước** (giữ hạn nộp + thu nhập, trạng thái reset) hoặc **Tạo từ mẫu**.
+- Tháng mới trống: **Sao chép từ tháng trước** (giữ hạn nộp + thu nhập, trạng thái reset) hoặc **Tạo từ mẫu** (theo danh sách loại).
 - **Lịch sử**: ai đổi gì, lúc nào, giá trị cũ → mới.
 - App tự làm mới mỗi 20 giây và khi mở lại tab.
 

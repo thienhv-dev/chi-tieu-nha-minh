@@ -154,6 +154,12 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .nm{flex:1.3}
 .inc-row .amt{flex:1;text-align:right;font-weight:600}
 .inc-row .x{width:36px;flex:none;color:var(--muted);font-size:22px;line-height:1}
+.inc-row .dd{width:58px;flex:none;text-align:center}
+.field .lrow{display:flex;justify-content:space-between;align-items:center}
+.field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
+.field .chk{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:14px;color:var(--muted);text-transform:none;letter-spacing:0}
+.field .chk input{width:18px;height:18px;padding:0;margin:0;flex:none;accent-color:var(--blue)}
+.field .chk[hidden]{display:none}
 .addrow{color:var(--blue);font-weight:600;font-size:15px;padding:4px 0 14px}
 .inc-sum{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-size:15px}
 .ct h3 .cnt{font-size:13px;font-weight:600;background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
@@ -322,7 +328,7 @@ const S = {
   pin: LS.get('ct_pin', ''),
   month: ym(now),
   tab: LS.get('ct_tab', 'overview'),
-  items: [], history: [], months: [], income: [], lastIncome: [],
+  items: [], history: [], months: [], income: [], lastIncome: [], types: [],
   loading: false, busy: false,
 };
 const DEMO = !CONFIG.API_URL;
@@ -399,6 +405,7 @@ async function call(action, payload = {}) {
 function localApi(p) {
   let db = LS.get('ct_demo_db', null);
   if (!db || db.v !== DEMO_V) db = seedDemo(); // dữ liệu demo bản cũ → tạo lại
+  db.types ||= [];
   const ts = () => new Date().toISOString();
   const log = (month, item, action, field, o, n) => db.history.push({ ts: ts(), user: p.user, month, itemId: item.id || '', itemName: item.name || '', action, field: field || '', oldValue: o == null ? '' : String(o), newValue: n == null ? '' : String(n) });
   const bulk = (items, label) => {
@@ -441,6 +448,9 @@ function localApi(p) {
     if (!db.income.some(r => r.month === p.month)) setInc(db.income.filter(r => r.month === p.from));
   } else if (p.action === 'setIncome') {
     setInc(p.income || []);
+  } else if (p.action === 'setTypes') {
+    db.types = (p.types || []).map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' })).filter(x => x.name);
+    log(p.month, { name: 'Loại khoản chi' }, 'types', '', '', db.types.length);
   }
   LS.set('ct_demo_db', db);
   const incOf = m => db.income.filter(r => r.month === m).map(r => ({ name: r.name, amount: r.amount }));
@@ -448,6 +458,7 @@ function localApi(p) {
   return {
     ok: true,
     months: [...new Set([...db.items, ...db.income].map(r => r.month))].sort(),
+    types: db.types,
     income: incOf(p.month),
     lastIncome: prev ? incOf(prev) : [],
     items: db.items.filter(r => r.month === p.month).sort((a, b) => a.order - b.order),
@@ -473,7 +484,7 @@ function seedDemo() {
 function setData(j) {
   j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
   const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
-  Object.assign(S, { items: j.items, history: j.history, months, income: j.income || [], lastIncome: j.lastIncome || [] });
+  Object.assign(S, { items: j.items, history: j.history, months, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
 }
 
 async function load(silent) {
@@ -658,7 +669,8 @@ function renderItems() {
   const el = $('#tab-items');
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
   el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${mLong(S.month)}</h2></div>${itemSummary()}
-    <div class="sec"><h2>Các khoản</h2><span class="lbl">Chạm trạng thái để đổi nhanh</span></div>${itemList()}`;
+    <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-types>Loại khoản chi</button></div>${itemList()}
+    <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi nhanh</div>`;
 }
 
 function histText(h) {
@@ -666,6 +678,7 @@ function histText(h) {
   if (h.action === 'create') return `${who} thêm ${nm} · ${vnd(h.newValue)}`;
   if (h.action === 'delete') return `${who} xoá ${nm} · ${vnd(h.oldValue)}`;
   if (h.action === 'bulk') return `${who} ${esc(h.newValue)}`;
+  if (h.action === 'types') return `${who} cập nhật danh sách loại khoản chi · ${esc(h.newValue)} loại`;
   if (h.action === 'income') {
     if (h.newValue === '') return `${who} xoá thu nhập ${nm} · ${vnd(h.oldValue)}`;
     if (Number(h.oldValue)) return `${who} sửa thu nhập ${nm}<div class="chg"><s>${vnd(h.oldValue)}</s> → ${vnd(h.newValue)}</div>`;
@@ -779,7 +792,7 @@ function emptyState() {
     <div style="font-weight:600;color:var(--ink);font-size:17px;margin-top:6px">${S.loading ? 'Đang tải…' : mLong(S.month) + ' chưa có khoản nào'}</div>
     ${S.loading ? '' : `<div class="btns">
       ${prev ? `<button class="btn" data-copy="${prev}">Sao chép từ ${mLabel(prev)}</button>` : ''}
-      <button class="btn ${prev ? 'ghost' : ''}" data-template>Tạo từ mẫu</button>
+      <button class="btn ${prev ? 'ghost' : ''}" data-template>Tạo từ mẫu (${typesList().length} loại)</button>
       <button class="btn ghost" data-add>Thêm thủ công</button>
     </div>`}
   </div>`;
@@ -823,6 +836,42 @@ function openWho() {
 
 function parseAmt(s) { return Number(String(s).replace(/\D/g, '')) || 0; }
 
+// Danh sách loại: lấy từ Sheet; chưa có thì dùng TEMPLATE làm mặc định
+function typesList() {
+  return S.types.length ? S.types : TEMPLATE.map(([name, amount, due]) => ({ name, amount, due }));
+}
+
+function openTypes() {
+  const fmt = n => Number(n) ? Number(n).toLocaleString('vi-VN') : '';
+  const row = (x = {}) => `<div class="inc-row">
+      <input class="nm" value="${esc(x.name || '')}" placeholder="Tên loại" aria-label="Tên loại">
+      <input class="amt" inputmode="numeric" value="${fmt(x.amount)}" placeholder="Số tiền" aria-label="Số tiền mặc định">
+      <input class="dd" inputmode="numeric" maxlength="2" value="${x.due || ''}" placeholder="Hạn" aria-label="Hạn nộp (ngày trong tháng)">
+      <button class="x" aria-label="Xoá dòng">×</button></div>`;
+  openSheet(`<h3>Loại khoản chi</h3>
+    <div class="lbl" style="margin:-6px 0 12px">Dùng để chọn nhanh khi thêm khoản và cho nút "Tạo từ mẫu". Hạn = ngày trong tháng (1–31), bỏ trống nếu không có.</div>
+    <div id="types">${typesList().map(row).join('')}</div>
+    <button class="addrow" id="tpAdd">+ Thêm loại</button>
+    <div class="acts"><button class="btn ghost" id="tpCancel">Huỷ</button><button class="btn" id="tpSave">Lưu</button></div>`);
+  const box = $('#types');
+  box.oninput = e => {
+    if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
+    if (e.target.classList.contains('dd')) { const n = Math.min(31, parseAmt(e.target.value)); e.target.value = n || ''; }
+  };
+  box.onclick = e => { const x = e.target.closest('.x'); if (x) x.parentElement.remove(); };
+  $('#tpAdd').onclick = () => { box.insertAdjacentHTML('beforeend', row()); box.lastElementChild.querySelector('.nm').focus(); };
+  $('#tpCancel').onclick = closeSheet;
+  $('#tpSave').onclick = () => {
+    const types = [...box.querySelectorAll('.inc-row')].map(r => ({
+      name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), due: parseAmt(r.querySelector('.dd').value) || '',
+    })).filter(x => x.name || x.amount);
+    if (types.some(x => !x.name)) return toast('Nhập tên cho loại', true);
+    if (new Set(types.map(x => x.name.toLowerCase())).size < types.length) return toast('Tên loại bị trùng', true);
+    closeSheet(); S.types = types; render();
+    mutate('setTypes', { types }, 'Đã lưu loại khoản chi');
+  };
+}
+
 function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
   if (!it) return;
@@ -830,7 +879,10 @@ function openEdit(id) {
   const [yy, mm] = S.month.split('-').map(Number), lastDay = new Date(yy, mm, 0).getDate();
   const ymd = d => S.month + '-' + String(d).padStart(2, '0');
   openSheet(`<h3>${id ? 'Sửa khoản chi' : 'Thêm khoản chi'}</h3>
-    <div class="field"><label>Tên khoản</label><input id="fName" value="${esc(it.name)}" placeholder="VD: Tiền điện"></div>
+    <div class="field"><label class="lrow">Tên khoản <button type="button" data-types>Quản lý loại</button></label>
+      <input id="fName" list="typeList" autocomplete="off" value="${esc(it.name)}" placeholder="Chọn loại có sẵn hoặc gõ tên mới">
+      <datalist id="typeList">${typesList().map(x => `<option value="${esc(x.name)}">${x.amount ? vnd(x.amount) : ''}${x.due ? ' · hạn ngày ' + x.due : ''}</option>`).join('')}</datalist>
+      <label class="chk" id="fNewType" hidden><input type="checkbox" id="fSaveType" checked> Lưu tên này vào danh sách loại</label></div>
     <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></div>
     <div class="field"><label>Hạn nộp</label><div class="row2"><input id="fDue" type="date" min="${ymd(1)}" max="${ymd(lastDay)}" value="${it.due ? ymd(Math.min(Number(it.due), lastDay)) : ''}"><button id="fDueClr" type="button">Bỏ hạn</button></div><span class="hint">Lặp lại ngày này khi sao chép sang tháng sau</span></div>
     <div class="field"><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
@@ -842,6 +894,14 @@ function openEdit(id) {
   $('#sheet').querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     st = b.dataset.st; $('#sheet').querySelectorAll('[data-st]').forEach(x => x.classList.toggle('on', x === b));
   });
+  // Chọn đúng tên một loại → tự điền số tiền / hạn nếu đang trống; tên mới → hỏi có lưu thành loại không
+  const findType = n => typesList().find(x => x.name.toLowerCase() === n.trim().toLowerCase());
+  $('#fName').oninput = () => {
+    const n = $('#fName').value, tp = findType(n);
+    $('#fNewType').hidden = !n.trim() || !!tp;
+    if (tp && !parseAmt(amt.value) && tp.amount) amt.value = Number(tp.amount).toLocaleString('vi-VN');
+    if (tp && !$('#fDue').value && tp.due) $('#fDue').value = ymd(Math.min(Number(tp.due), lastDay));
+  };
   if (!id) setTimeout(() => $('#fName').focus(), 250);
   $('#fDueClr').onclick = () => { $('#fDue').value = ''; };
   $('#fCancel') && ($('#fCancel').onclick = closeSheet);
@@ -855,9 +915,11 @@ function openEdit(id) {
     if (!name) return toast('Nhập tên khoản', true);
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
     const item = id ? { id, name, amount, status: st, note, due } : { month: S.month, name, amount, status: st, note, due };
+    const addType = !findType(name) && $('#fSaveType').checked;
     closeSheet();
     if (id) { Object.assign(it, item); render(); }
-    mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản');
+    mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản')
+      .then(() => addType && mutate('setTypes', { types: [...typesList(), { name, amount, due }] }, `Đã lưu "${name}" vào danh sách loại`));
   };
 }
 
@@ -876,7 +938,8 @@ document.addEventListener('click', e => {
     mutate('save', { item: { id: it.id, name: it.name, status } }, `${it.name}: ${STATUS[status].label}`);
   }
   else if (d.copy) mutate('copyMonth', { from: d.copy }, 'Đã sao chép từ ' + mLabel(d.copy));
-  else if ('template' in d) mutate('bulkCreate', { items: TEMPLATE.map(([name, amount, due]) => ({ name, amount, due })) }, 'Đã tạo từ mẫu');
+  else if ('template' in d) mutate('bulkCreate', { items: typesList() }, 'Đã tạo từ mẫu');
+  else if ('types' in d) openTypes();
   else if ('add' in d) openEdit();
   else if ('income' in d) openIncome();
 });
