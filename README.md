@@ -1,0 +1,82 @@
+# Chi tiêu nhà mình
+
+Web app tĩnh (1 file `index.html`) cho 2 vợ chồng cùng xem/sửa chi tiêu theo tháng.
+Dữ liệu lưu trong **Google Sheet** qua Apps Script, có **lịch sử thay đổi**.
+
+Mở `index.html` khi chưa cấu hình `API_URL` = **chế độ demo** (lưu trên trình duyệt) để xem thử.
+
+```
+index.html  ──fetch──▶  Apps Script Web App (/exec)  ──▶  Google Sheet
+(GitHub Pages)          kiểm tra PIN, ghi lịch sử         tab Items · Income · History
+```
+
+## 1. Tạo DB + backend (Google Sheet + Apps Script)
+
+1. Tạo **Google Sheet** mới, đặt tên tuỳ ý (VD: `Chi tiêu nhà mình`).
+2. Menu **Extensions → Apps Script**, xoá code mẫu, dán toàn bộ [apps-script/Code.gs](apps-script/Code.gs) → 💾 Save.
+3. **Đặt PIN** (không nằm trong code): ⚙️ **Project Settings → Script properties → Add script property**
+   - Property: `PIN` · Value: mã riêng của 2 vợ chồng (nên ≥ 8 ký tự) → **Save script properties**.
+4. **Deploy → New deployment →** ⚙️ chọn loại **Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. **Authorize access** → chọn tài khoản → *Advanced → Go to … (unsafe)* → Allow
+   (cảnh báo này bình thường vì script do chính bạn viết).
+6. Copy **Web app URL** (đuôi `/exec`).
+
+Script tự tạo 3 tab ở lần gọi đầu tiên:
+
+| Tab | Cột | Ý nghĩa |
+|---|---|---|
+| `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng) |
+| `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
+| `History` | ts, user, month, itemId, itemName, action, field, oldValue, newValue | Ai đổi gì, lúc nào |
+
+> Kiểm tra nhanh: mở `<URL>/exec?action=list&key=<PIN>&month=2026-10` trên trình duyệt → thấy `{"ok":true,...}` là chạy.
+
+**Sửa `Code.gs` sau này:** dán code mới → **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. URL giữ nguyên.
+(Đừng bấm *New deployment* — sẽ ra URL mới.)
+
+## 2. Gắn URL vào app
+
+Trong `index.html`, tìm `CONFIG` và dán URL:
+
+```js
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/XXXX/exec',
+  USERS: [{ id: 'Chồng', color: '#2f7cf6' }, { id: 'Vợ', color: '#e5486a' }],
+  ...
+```
+
+Có thể đổi tên `USERS` (VD: "Tuyền", "Lan").
+
+## 3. Đưa lên mạng (GitHub Pages, miễn phí)
+
+```bash
+git init && git add . && git commit -m "Chi tiêu nhà mình"
+gh repo create chi-tieu-nha-minh --public --source=. --push
+```
+
+Trên GitHub: **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save**.
+Sau ~1 phút có link `https://<user>.github.io/chi-tieu-nha-minh/`.
+
+Hoặc **Netlify Drop**: kéo thả thư mục vào https://app.netlify.com/drop.
+
+Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** để dùng như app.
+
+## Dùng
+
+- Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
+- **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
+- **Khoản chi**: chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
+- **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
+- **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).
+- Tháng mới trống: **Sao chép từ tháng trước** (giữ hạn nộp + thu nhập, trạng thái reset) hoặc **Tạo từ mẫu**.
+- **Lịch sử**: ai đổi gì, lúc nào, giá trị cũ → mới.
+- App tự làm mới mỗi 20 giây và khi mở lại tab.
+
+## Bảo mật
+
+- Link trang và URL Apps Script là public, nhưng đọc/ghi dữ liệu cần **PIN**.
+- PIN nằm trong **Script properties** của Apps Script, không có trong code → push repo public vẫn an toàn.
+- Đây là mức bảo vệ "gia đình": đừng dùng PIN trùng mật khẩu quan trọng.
+- Đổi PIN: sửa Script property `PIN` (không cần deploy lại) → 2 người nhập lại PIN mới.
