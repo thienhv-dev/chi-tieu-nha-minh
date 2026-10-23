@@ -114,6 +114,20 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .kv span{color:var(--muted)}
 .kv b{white-space:nowrap}
 .kv.total{font-size:16px}.kv.total span{color:var(--ink);font-weight:600}
+.sum{padding:6px 18px}
+.sum .kv:first-child{border-top:0}
+.sum .kv:first-child span{color:var(--ink);font-weight:600}
+.sum .kv.sub{padding:6px 0;border-top:0;font-size:14px}
+.sum .kv.sub span{display:flex;align-items:center;gap:8px;padding-left:4px}
+.sum .kv.sub i{width:8px;height:8px;border-radius:50%}
+.sum .kv.sub b{font-weight:500;color:var(--muted)}
+.sum button.kv{width:100%;text-align:left}
+.sum button.kv span{display:flex;align-items:center;gap:6px}
+.sum button.kv svg{width:14px;height:14px;color:var(--blue)}
+.sum button.kv em{font-style:normal;color:var(--blue)}
+.sum .kv.total{border-top:2px solid var(--line);padding:12px 0}
+.sum .kv.total.pos b{color:var(--green)}
+.sum .kv.total.neg b,.sum .kv.total.neg span{color:var(--pink)}
 .tl-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .ct + .tl-row,.ct + .lbl + .tl-row{border-top:0;padding-top:4px}
 .tl-row .d{width:58px;flex:none;font-weight:700;font-size:15px}
@@ -593,6 +607,19 @@ function itemList() {
   </div>`;
 }
 
+// Tóm tắt dạng hoá đơn: dự kiến chi → đã trả / còn phải trả → thu nhập → dư hay âm
+function itemSummary() {
+  const t = totals(), inc = S.income.reduce((s, x) => s + (Number(x.amount) || 0), 0), left = inc - t.active;
+  return `<div class="card sum">
+    <div class="kv"><span>Tổng chi dự kiến</span><b>${vnd(t.active)}</b></div>
+    <div class="kv sub"><span><i style="background:var(--green)"></i>Đã trả</span><b>${vnd(t.paid)}</b></div>
+    <div class="kv sub"><span><i style="background:var(--muted)"></i>Còn phải trả</span><b>${vnd(t.none)}</b></div>
+    ${t.skip ? `<div class="kv sub"><span><i style="background:var(--orange)"></i>Hoãn (không tính)</span><b>${vnd(t.skip)}</b></div>` : ''}
+    <button class="kv" data-income><span>Thu nhập ${ICON.edit}</span><b>${S.income.length ? vnd(inc) : '<em>Nhập thu nhập</em>'}</b></button>
+    ${S.income.length ? `<div class="kv total ${left < 0 ? 'neg' : 'pos'}"><span>${left < 0 ? 'Âm (chi vượt thu)' : 'Còn dư'}</span><b>${left < 0 ? '−' : ''}${vnd(Math.abs(left))}</b></div>` : ''}
+  </div>`;
+}
+
 function openIncome() {
   const fromLast = !S.income.length && S.lastIncome.length > 0;
   const start = S.income.length ? S.income : fromLast ? S.lastIncome : CONFIG.USERS.map(u => ({ name: 'Lương ' + u.id, amount: 0 }));
@@ -630,7 +657,8 @@ function openIncome() {
 function renderItems() {
   const el = $('#tab-items');
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
-  el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${mLong(S.month)}</h2><span class="lbl">Chạm trạng thái để đổi nhanh</span></div>${itemList()}`;
+  el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${mLong(S.month)}</h2></div>${itemSummary()}
+    <div class="sec"><h2>Các khoản</h2><span class="lbl">Chạm trạng thái để đổi nhanh</span></div>${itemList()}`;
 }
 
 function histText(h) {
