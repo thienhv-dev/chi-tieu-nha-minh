@@ -333,7 +333,8 @@ const DEMO = !CONFIG.API_URL;
 /* ============ helpers ============ */
 function ym(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function addMonth(m, n) { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); }
-function mLabel(m) { const [y, mo] = m.split('-'); return 'T' + Number(mo) + '/' + y.slice(2); }
+// Nhãn tháng: "Tháng 10"; khác năm hiện tại thì thêm năm, VD "Tháng 1/2027"
+function mLabel(m) { const [y, mo] = m.split('-'); return 'Tháng ' + Number(mo) + (Number(y) === new Date().getFullYear() ? '' : '/' + y); }
 function mLong(m) { const [y, mo] = m.split('-'); return 'Tháng ' + Number(mo) + '/' + y; }
 const vnd = n => (Number(n) || 0).toLocaleString('vi-VN') + ' đ';
 function compact(n) {
