@@ -1,6 +1,6 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
- * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid}])
+ * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid, note}])
  * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới")
@@ -128,12 +128,12 @@ function clean_(o) {
   };
 }
 
-// Chi tiết của một khoản: mảng [{name, amount, paid}]; trong Sheet lưu dạng chuỗi JSON
+// Chi tiết của một khoản: mảng [{name, amount, paid, note}]; trong Sheet lưu dạng chuỗi JSON
 function details_(v) {
   let a = v;
   if (!Array.isArray(a)) { try { a = JSON.parse(v || '[]'); } catch (_) { a = []; } }
   if (!Array.isArray(a)) return [];
-  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0, paid: !!(x && x.paid) }))
+  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0, paid: !!(x && x.paid), note: String((x && x.note) || '').trim() }))
     .filter(x => x.name || x.amount);
 }
 

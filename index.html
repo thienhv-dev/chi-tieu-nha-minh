@@ -157,6 +157,10 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .x{width:36px;flex:none;color:var(--muted);font-size:22px;line-height:1}
 .inc-row .dd{width:58px;flex:none;text-align:center}
 .inc-row.dt input{padding:10px 12px;font-size:15px}
+.dtw{margin-bottom:12px}
+.dtw .inc-row{margin-bottom:6px}
+.field .dtw .dnote{padding:8px 12px;font-size:14px;border-style:dashed;background:transparent}
+.row .dts .dn small{display:block;font-size:12px;color:var(--muted);opacity:.85;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .s-part{background:var(--blue-t);color:var(--blue)}
 .row{flex-wrap:wrap}
 .row .amt .left{color:var(--ink);font-weight:600}
@@ -165,7 +169,8 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row .dts button{display:flex;align-items:center;gap:8px;width:100%;padding:5px 0;font-size:13.5px;color:var(--muted);text-align:left}
 .row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
 .row .dts .paid .ck{background:var(--green);border-color:var(--green)}
-.row .dts .paid .dn{text-decoration:line-through}
+.row .dts .dn .t{font-style:normal}
+.row .dts .paid .dn .t{text-decoration:line-through}
 .row .dts .dn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .dts b{font-weight:500;white-space:nowrap}
 .inc-row .pd{width:40px;flex:none;border-radius:12px;border:1.5px solid var(--line);color:var(--line);font-weight:700}
@@ -623,7 +628,7 @@ function itemList() {
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
         ${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
-          <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn">${esc(d.name)}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
+          <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn"><i class="t">${esc(d.name)}</i>${d.note ? `<small>${esc(d.note)}</small>` : ''}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
       </div>`; }).join('')}
     <div class="total-row"><span>Tổng cộng</span><span>${vnd(t.all)}</span></div>
   </div>`;
@@ -896,11 +901,12 @@ function renderTypes() {
   };
 }
 
-const dtRow = (x = {}) => `<div class="inc-row dt">
+const dtRow = (x = {}) => `<div class="dtw"><div class="inc-row dt">
     <input class="nm" value="${esc(x.name || '')}" placeholder="VD: Điện thoại" aria-label="Tên chi tiết">
     <input class="amt" inputmode="numeric" value="${Number(x.amount) ? Number(x.amount).toLocaleString('vi-VN') : ''}" placeholder="0" aria-label="Số tiền">
     <button type="button" class="pd ${x.paid ? 'on' : ''}" aria-label="Đã trả">✓</button>
-    <button type="button" class="x" aria-label="Xoá dòng">×</button></div>`;
+    <button type="button" class="x" aria-label="Xoá dòng">×</button></div>
+    <input class="dnote" value="${esc(x.note || '')}" placeholder="Ghi chú (không bắt buộc)" aria-label="Ghi chú chi tiết"></div>`;
 
 function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
@@ -931,7 +937,7 @@ function openEdit(id) {
   amt.oninput = () => { const n = parseAmt(amt.value); amt.value = n ? n.toLocaleString('vi-VN') : ''; };
   // Chi tiết nằm trong số tiền của khoản; dòng nào đã trả thì trừ ra → còn lại
   const dts = $('#fDts');
-  const readDts = () => [...dts.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on') }));
+  const readDts = () => [...dts.querySelectorAll('.dtw')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on'), note: r.querySelector('.dnote').value.trim() }));
   const showSum = () => {
     const list = readDts().filter(x => x.name || x.amount), total = parseAmt(amt.value);
     const paid = list.reduce((s, x) => s + (x.paid ? x.amount : 0), 0), inDt = list.reduce((s, x) => s + x.amount, 0);
@@ -946,7 +952,7 @@ function openEdit(id) {
   };
   dts.onclick = e => {
     const x = e.target.closest('.x'), pd = e.target.closest('.pd');
-    if (x) x.parentElement.remove();
+    if (x) x.closest('.dtw').remove();
     if (pd) pd.classList.toggle('on');
     showSum();
   };
@@ -978,7 +984,7 @@ function openEdit(id) {
     const name = tv === 'other' ? $('#fName').value.trim() : types[tv].name;
     if (!name) return toast('Nhập tên khoản', true);
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
-    const details = readDts().filter(x => x.name || x.amount);
+    const details = readDts().filter(x => x.name || x.amount || x.note);
     if (details.some(x => !x.name)) return toast('Nhập tên cho dòng chi tiết', true);
     const item = id ? { id, name, amount, status: st, note, due, details } : { month: S.month, name, amount, status: st, note, due, details };
     closeSheet();
