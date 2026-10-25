@@ -81,7 +81,10 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
 - **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).
 - Tháng mới trống: **Sao chép từ tháng trước** (giữ hạn nộp + thu nhập, trạng thái reset) hoặc **Tạo từ mẫu** (theo danh sách loại).
-- App tự làm mới mỗi 20 giây và khi mở lại tab.
+- **Nhanh dù Apps Script chậm**: dữ liệu lưu sẵn trên máy (mở app là thấy ngay), mọi thao tác hiện ngay và được lưu ở nền
+  theo thứ tự (chấm *Đang lưu… / ✓ Đã lưu / ⚠ Chưa lưu được / Ngoại tuyến* cạnh tên tháng; thay đổi chờ lưu được giữ cả khi tắt app).
+- App tự làm mới mỗi 20 giây và khi mở lại tab. Backend đệm kết quả 10 phút: **sửa tay trong Sheet** thì app thấy sau tối đa 10 phút
+  (muốn ngay: chạy hàm `setup` trong Apps Script).
 
 ## Bảo mật
 

@@ -34,6 +34,7 @@ function setup() {
   sheet_('Income', INC_H);
   sheet_('Types', TYPE_H);
   sheet_('Months', MONTH_H);
+  bump_();
   const pin = PropertiesService.getScriptProperties().getProperty('PIN');
   Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types/Months. PIN đã đặt (' + pin.length + ' ký tự).'
                  : '⚠️ Đã tạo tab, nhưng CHƯA đặt PIN: Project Settings → Script properties → thêm PIN.');
@@ -44,7 +45,7 @@ function handle_(p) {
     const pin = PropertiesService.getScriptProperties().getProperty('PIN');
     if (!pin) return out_({ ok: false, error: 'Chưa đặt PIN trong Script properties' });
     if (String(p.key) !== pin) return out_({ ok: false, error: 'Sai mã PIN' });
-    if (p.action === 'list') return out_(Object.assign({ ok: true }, list_(p.month)));
+    if (p.action === 'list') return out_(Object.assign({ ok: true }, cachedList_(p.month)));
 
     const lock = LockService.getScriptLock();
     lock.waitLock(15000);
@@ -60,13 +61,31 @@ function handle_(p) {
         case 'setMonthName': setMonthName_(p.month, p.name, user); break;
         default: return out_({ ok: false, error: 'Unknown action' });
       }
+      bump_(); // dữ liệu vừa đổi → bỏ bộ nhớ đệm cũ
     } finally {
       lock.releaseLock();
     }
-    return out_(Object.assign({ ok: true }, list_(p.month)));
+    return out_(Object.assign({ ok: true }, cachedList_(p.month)));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
   }
+}
+
+// Bộ nhớ đệm kết quả list theo tháng (10 phút). Mỗi lần ghi đổi "ver" nên dữ liệu cũ tự bị bỏ qua.
+// Sửa tay trong Sheet: app thấy sau tối đa 10 phút (hoặc chạy hàm setup để làm mới ngay).
+const CACHE_TTL = 600;
+function bump_() {
+  const v = String(Date.now());
+  CacheService.getScriptCache().put('ver', v, CACHE_TTL);
+  return v;
+}
+function cachedList_(month) {
+  const c = CacheService.getScriptCache(), ver = c.get('ver') || bump_(), key = 'list:' + ver + ':' + month;
+  const hit = c.get(key);
+  if (hit) return JSON.parse(hit);
+  const data = list_(month), str = JSON.stringify(data);
+  if (str.length < 95000) c.put(key, str, CACHE_TTL); // giới hạn 100KB / khoá của CacheService
+  return data;
 }
 
 function out_(obj) {
@@ -173,7 +192,7 @@ function save_(item, user) {
   } else {
     const order = Math.max(0, ...all.filter(r => String(r.month) === item.month).map(r => Number(r.order) || 0)) + 1;
     const next = clean_(Object.assign({ order: order, status: 'none' }, item, {
-      id: Utilities.getUuid().slice(0, 8), updatedAt: now, updatedBy: user,
+      id: String(item.id || Utilities.getUuid().slice(0, 8)), updatedAt: now, updatedBy: user,
     }));
     append_(s, [itemRow_(next)]);
   }

@@ -46,6 +46,11 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0}
 .sub{color:var(--muted);font-size:13px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{margin-left:8px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;vertical-align:1px}
+.sync.busy{background:var(--orange-t);color:var(--orange)}
+.sync.ok{background:var(--green-t);color:var(--green)}
+.sync.off{background:var(--gray-t);color:var(--muted)}
+.sync.err{background:var(--pink-t);color:var(--pink)}
 .me{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:4px 12px 4px 4px;box-shadow:var(--shadow);font-weight:600;font-size:14px}
 .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700;flex:none}
 .seg{display:flex;align-items:center;gap:4px;margin-top:12px;background:var(--gray-t);border-radius:999px;padding:4px}
@@ -286,7 +291,7 @@ nav button.on{color:var(--blue)}
     <div class="hrow">
       <div style="min-width:0">
         <h1 class="h1">Chi tiêu nhà mình</h1>
-        <div class="sub" id="sub">Đang tải…</div>
+        <div class="sub"><span id="sub">Đang tải…</span><button class="sync" id="sync" data-sync hidden></button></div>
       </div>
       <button class="me" id="meBtn"><span class="av" id="meAv">?</span><span id="meName">Chọn</span></button>
     </div>
@@ -419,11 +424,11 @@ function toast(msg, err, undo) {
 }
 
 /* ============ API ============ */
-async function call(action, payload = {}) {
-  const body = { action, key: S.pin, user: S.user, month: S.month, ...payload };
+async function call(action, payload = {}, month = S.month) {
+  const body = { action, key: S.pin, user: S.user, month, ...payload };
   if (DEMO) return localApi(body);
   let res;
-  if (action === 'list') res = await fetch(CONFIG.API_URL + '?' + new URLSearchParams({ action, key: S.pin, month: S.month }));
+  if (action === 'list') res = await fetch(CONFIG.API_URL + '?' + new URLSearchParams({ action, key: S.pin, month }));
   else res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify(body) }); // text/plain → không bị CORS preflight
   const j = await res.json();
   if (!j.ok) throw new Error(j.error || 'Lỗi máy chủ');
@@ -449,7 +454,7 @@ function localApi(p) {
     if (cur) Object.assign(cur, it, { updatedAt: ts(), updatedBy: p.user });
     else {
       const order = Math.max(0, ...db.items.filter(r => r.month === it.month).map(r => r.order)) + 1;
-      db.items.push({ status: 'none', note: '', order, ...it, id: Math.random().toString(36).slice(2, 10), updatedAt: ts(), updatedBy: p.user });
+      db.items.push({ status: 'none', note: '', order, ...it, id: it.id || Math.random().toString(36).slice(2, 10), updatedAt: ts(), updatedBy: p.user });
     }
   } else if (p.action === 'delete') {
     db.items = db.items.filter(r => r.id !== p.id);
@@ -493,33 +498,117 @@ function seedDemo() {
 }
 
 // Chuẩn hoá dữ liệu từ server: trạng thái lạ → Chưa trả, chỉ nhận tháng dạng YYYY-MM
-function setData(j) {
+function setData(j, month = S.month) {
   j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; if (!Array.isArray(i.details)) i.details = []; });
   const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
-  Object.assign(S, { items: j.items, months, monthNames: j.monthNames || {}, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
+  Object.assign(S, { months, monthNames: j.monthNames || {}, types: j.types || [] });
+  if (month === S.month) Object.assign(S, { items: j.items, income: j.income || [], lastIncome: j.lastIncome || [] });
+  if (!DEMO) {
+    CACHE.m[month] = { items: j.items, income: j.income || [], lastIncome: j.lastIncome || [] };
+    Object.assign(CACHE, { months: S.months, monthNames: S.monthNames, types: S.types });
+    LS.set('ct_cache', CACHE);
+  }
+}
+
+/* ---- Dữ liệu lưu sẵn trên máy: mở app / chuyển tháng là có ngay, tải bản mới ở nền ---- */
+const CACHE = DEMO ? { m: {} } : LS.get('ct_cache', { m: {} });
+function cacheSave() {
+  if (DEMO) return;
+  CACHE.m[S.month] = { items: S.items, income: S.income, lastIncome: S.lastIncome };
+  Object.assign(CACHE, { months: S.months, monthNames: S.monthNames, types: S.types });
+  LS.set('ct_cache', CACHE);
+}
+function cacheApply(month) {
+  const c = CACHE.m[month];
+  Object.assign(S, { months: CACHE.months || S.months, monthNames: CACHE.monthNames || S.monthNames, types: CACHE.types || S.types });
+  if (c) Object.assign(S, { items: c.items, income: c.income, lastIncome: c.lastIncome });
+  else Object.assign(S, { items: [], income: [], lastIncome: [] });
+  return !!c;
+}
+function switchMonth(m) {
+  S.month = m;
+  cacheApply(m);
+  load();
 }
 
 async function load(silent) {
   if (!S.user || (!DEMO && !S.pin)) return;
-  if (!silent) S.loading = true, render();
+  const month = S.month, have = !!CACHE.m[month] || DEMO;
+  if (!silent && !have) S.loading = true, render();
   try {
-    const j = await call('list');
-    setData(j);
+    const j = await call('list', {}, month);
+    // Có thay đổi của tháng này đang chờ lưu → giữ bản trên máy, không để dữ liệu server ghi đè
+    if (!Q.some(op => op.month === month)) setData(j, month);
   } catch (e) {
     if (/Sai mã PIN/.test(e.message)) { S.pin = ''; LS.set('ct_pin', ''); openWho(); }
-    if (!silent) toast(e.message || 'Không tải được dữ liệu', true);
+    if (!silent && !have) toast(e.message || 'Không tải được dữ liệu', true);
   }
   S.loading = false; render();
 }
 
-async function mutate(action, payload, msg, undo) {
-  S.busy = true;
+/* ---- Hàng đợi lưu: màn hình đổi ngay, lệnh lưu gửi lần lượt ở nền (giữ cả khi tắt app) ---- */
+let Q = LS.get('ct_queue', []), qPromise = null, qError = '', savedAt = 0;
+function enqueue(action, payload, msg, undo) {
+  Q.push({ action, payload, month: S.month });
+  LS.set('ct_queue', Q);
+  cacheSave();
+  if (msg) toast(msg, false, undo);
+  runQueue();
+}
+function runQueue() {
+  if (!qPromise) qPromise = drain().finally(() => { qPromise = null; setSync(); });
+  return qPromise;
+}
+async function drain() {
+  qError = '';
+  while (Q.length && navigator.onLine) {
+    setSync();
+    const op = Q[0];
+    try {
+      const j = await call(op.action, op.payload, op.month);
+      Q.shift(); LS.set('ct_queue', Q);
+      if (!Q.length) { savedAt = Date.now(); setData(j, op.month); render(); }
+    } catch (e) {
+      qError = e.message || 'Lưu thất bại';
+      if (/Sai mã PIN/.test(qError)) { S.pin = ''; LS.set('ct_pin', ''); openWho(); }
+      return;
+    }
+  }
+}
+// Chấm trạng thái lưu cạnh tên tháng
+function setSync() {
+  const el = $('#sync'); if (!el) return;
+  let cls = '', txt = '';
+  if (qError) cls = 'err', txt = '⚠ Chưa lưu được · chạm để xử lý';
+  else if (Q.length && !navigator.onLine) cls = 'off', txt = `Ngoại tuyến · ${Q.length} thay đổi chờ lưu`;
+  else if (Q.length) cls = 'busy', txt = 'Đang lưu…';
+  else if (Date.now() - savedAt < 2500) cls = 'ok', txt = '✓ Đã lưu';
+  el.className = 'sync ' + cls; el.textContent = txt; el.hidden = !txt;
+  if (cls === 'ok') setTimeout(setSync, 2600);
+}
+function openSyncIssue() {
+  openSheet(`<h3>Chưa lưu được ${Q.length} thay đổi</h3>
+    <div class="lbl" style="margin-bottom:14px">Lỗi: ${esc(qError)}. Thay đổi vẫn được giữ trên máy này.</div>
+    <div class="acts"><button class="btn danger" id="sqDrop">Bỏ các thay đổi</button><button class="btn" id="sqRetry">Thử lại</button></div>`);
+  $('#sqRetry').onclick = () => { closeSheet(); runQueue(); };
+  $('#sqDrop').onclick = () => {
+    if (!confirm('Bỏ ' + Q.length + ' thay đổi chưa lưu và tải lại dữ liệu từ Sheet?')) return;
+    Q = []; LS.set('ct_queue', Q); qError = ''; closeSheet(); setSync(); load(true);
+  };
+}
+window.addEventListener('online', () => runQueue());
+window.addEventListener('offline', setSync);
+
+// Thao tác cần kết quả server ngay (sao chép tháng, tạo từ mẫu): lưu xong các thay đổi đang chờ rồi mới gọi
+async function mutate(action, payload, msg) {
+  await runQueue();
+  if (Q.length) return toast('Còn thay đổi chưa lưu được, thử lại sau', true);
+  S.loading = true; render();
   try {
-    const j = await call(action, payload);
-    setData(j);
-    if (msg) toast(msg, false, undo);
-  } catch (e) { toast(e.message || 'Lưu thất bại', true); await load(true); }
-  S.busy = false; render();
+    setData(await call(action, payload));
+    if (msg) toast(msg);
+  } catch (e) { toast(e.message || 'Lưu thất bại', true); }
+  S.loading = false; render();
 }
 
 /* ============ render ============ */
@@ -554,6 +643,7 @@ function renderHeader() {
   $('#meName').textContent = S.user || 'Chọn';
   $('#sub').textContent = S.loading ? 'Đang tải…' : S.monthNames[S.month] ? S.monthNames[S.month] + ' · ' + mLong(S.month) : mLong(S.month);
   $('#demoNote').hidden = !DEMO;
+  setSync();
 
   const cur = ym(new Date());
   const set = new Set([...S.months, cur, addMonth(cur, 1), S.month]);
@@ -673,7 +763,7 @@ function openMonthName() {
     if (name === cur) return;
     if (name) S.monthNames[S.month] = name; else delete S.monthNames[S.month];
     render();
-    mutate('setMonthName', { name }, name ? 'Đã đổi tên tháng' : 'Đã bỏ tên riêng');
+    enqueue('setMonthName', { name }, name ? 'Đã đổi tên tháng' : 'Đã bỏ tên riêng');
   };
 }
 
@@ -707,7 +797,7 @@ function openIncome() {
     if (income.some(x => !x.name)) return toast('Nhập tên cho khoản thu', true);
     if (new Set(income.map(x => x.name.toLowerCase())).size < income.length) return toast('Tên khoản thu bị trùng', true);
     closeSheet(); S.income = income; render();
-    mutate('setIncome', { income }, 'Đã lưu thu nhập');
+    enqueue('setIncome', { income }, 'Đã lưu thu nhập');
   };
 }
 
@@ -852,7 +942,7 @@ function openWho() {
     const pin = DEMO ? '' : $('#pinIn').value.trim();
     if (!DEMO && !pin) return toast('Nhập mã PIN', true);
     S.user = pick; S.pin = pin; LS.set('ct_user', pick); LS.set('ct_pin', pin);
-    closeSheet(); load();
+    closeSheet(); runQueue(); load();
   };
 }
 
@@ -929,7 +1019,7 @@ function renderTypes() {
     if (new Set(types.map(x => x.name.toLowerCase())).size < types.length) return toast('Tên loại bị trùng', true);
     document.activeElement?.blur();
     typesDirty = false; S.types = types; render();
-    mutate('setTypes', { types }, 'Đã lưu loại khoản chi');
+    enqueue('setTypes', { types }, 'Đã lưu loại khoản chi');
   };
 }
 
@@ -1016,7 +1106,7 @@ function openEdit(id) {
   $('#fDel') && ($('#fDel').onclick = () => {
     if (!confirm(`Xoá "${it.name}"?`)) return;
     closeSheet(); S.items = S.items.filter(i => i.id !== id); render();
-    mutate('delete', { id }, 'Đã xoá');
+    enqueue('delete', { id }, 'Đã xoá');
   });
   $('#fSave').onclick = () => {
     const tv = $('#fType').value, amount = parseAmt(amt.value), note = $('#fNote').value.trim();
@@ -1026,10 +1116,14 @@ function openEdit(id) {
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
     const details = readDts().filter(x => x.name || x.amount || x.note);
     if (details.some(x => !x.name)) return toast('Nhập tên cho dòng chi tiết', true);
-    const item = id ? { id, name, amount, status: st, note, due, details } : { month: S.month, name, amount, status: st, note, due, details };
+    // Khoản mới: app tự tạo id để hiện ngay trong danh sách, không chờ server
+    const item = id ? { id, name, amount, status: st, note, due, details }
+      : { id: Math.random().toString(36).slice(2, 10), month: S.month, name, amount, status: st, note, due, details };
     closeSheet();
-    if (id) { Object.assign(it, item); render(); }
-    mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản');
+    if (id) Object.assign(it, item);
+    else S.items.push({ ...item, order: Math.max(0, ...S.items.map(i => Number(i.order) || 0)) + 1, updatedBy: S.user, updatedAt: new Date().toISOString() });
+    render();
+    enqueue('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản');
   };
 }
 
@@ -1041,15 +1135,16 @@ document.addEventListener('click', e => {
   if (d.tab) { S.tab = d.tab; LS.set('ct_tab', d.tab); render(); scrollTo({ top: 0 }); }
   else if (d.goto) { if (sheetOpen) closeSheet(); S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
   else if (d.m === S.month) openMonthName();
-  else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
+  else if (d.m) switchMonth(d.m);
+  else if ('sync' in d) { if (qError) openSyncIssue(); }
   else if (d.edit) openEdit(d.edit);
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
     const status = NEXT_STATUS[it.status] || 'paid', prev = it.status, { id, name } = it;
     it.status = status; render();
-    mutate('save', { item: { id, name, status } }, `${name}: ${STATUS[status].label}`, () => {
+    enqueue('save', { item: { id, name, status } }, `${name}: ${STATUS[status].label}`, () => {
       const x = S.items.find(i => i.id === id); if (x) { x.status = prev; render(); }
-      mutate('save', { item: { id, name, status: prev } }, 'Đã hoàn tác');
+      enqueue('save', { item: { id, name, status: prev } }, 'Đã hoàn tác');
     });
   }
   else if ('undo' in d) { const f = undoFn; undoFn = null; $('#toast').classList.remove('show'); if (f) f(); }
@@ -1061,14 +1156,15 @@ document.addEventListener('click', e => {
 $('#fab').onclick = () => openEdit();
 $('#mask').onclick = () => { if (S.user) closeSheet(); };
 $('#meBtn').onclick = openWho;
-$('#prevM').onclick = () => { S.month = addMonth(S.month, -1); S.items = []; S.income = []; S.lastIncome = []; load(); };
-$('#nextM').onclick = () => { S.month = addMonth(S.month, 1); S.items = []; S.income = []; S.lastIncome = []; load(); };
+$('#prevM').onclick = () => switchMonth(addMonth(S.month, -1));
+$('#nextM').onclick = () => switchMonth(addMonth(S.month, 1));
 
-setInterval(() => { if (!document.hidden && !sheetOpen && !S.busy) load(true); }, CONFIG.POLL_MS);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !sheetOpen) load(true); });
+setInterval(() => { if (!document.hidden && !sheetOpen && !Q.length && !qPromise) load(true); }, CONFIG.POLL_MS);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !sheetOpen) { runQueue(); if (!Q.length) load(true); } });
 
+cacheApply(S.month);
 render();
-if (!S.user || (!DEMO && !S.pin)) openWho(); else load();
+if (!S.user || (!DEMO && !S.pin)) openWho(); else { runQueue(); load(); }
 </script>
 </body>
 </html>
