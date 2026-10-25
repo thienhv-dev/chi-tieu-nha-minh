@@ -164,6 +164,9 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .tp-head{display:flex;gap:8px;padding:0 4px 6px;font-size:12.5px;color:var(--muted)}
 .tp-head span:nth-child(1){flex:1.3}.tp-head span:nth-child(2){flex:1;text-align:right;padding-right:12px}.tp-head span:nth-child(3){width:58px;text-align:center}
 .tp-head::after{content:'';width:36px;flex:none}
+.tp-dirty{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13.5px;color:var(--orange);font-weight:600}
+.tp-dirty[hidden]{display:none}
+.tp-dirty button{color:var(--muted);font-weight:600;font-size:13.5px}
 .addrow{color:var(--blue);font-weight:600;font-size:15px;padding:4px 0 14px}
 .inc-sum{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-size:15px}
 .ct h3 .cnt{font-size:13px;font-weight:600;background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
@@ -774,9 +777,19 @@ function typesList() {
   return S.types.length ? S.types : TEMPLATE.map(([name, amount, due]) => ({ name, amount, due }));
 }
 
+// Đang sửa dở danh sách loại (chưa bấm Lưu) → không vẽ lại khi app tự làm mới, hỏi trước khi rời tab
+let typesDirty = false;
+function leaveTypes() {
+  if (!typesDirty || S.tab !== 'types') return true;
+  if (!confirm('Danh sách loại có thay đổi chưa lưu. Bỏ các thay đổi này?')) return false;
+  typesDirty = false;
+  return true;
+}
+window.addEventListener('beforeunload', e => { if (typesDirty) e.preventDefault(); });
+
 function renderTypes() {
   const el = $('#tab-types');
-  if (el.contains(document.activeElement)) return; // đang gõ dở thì không vẽ lại (VD lúc tự làm mới)
+  if (typesDirty) return;
   const fmt = n => Number(n) ? Number(n).toLocaleString('vi-VN') : '';
   const row = (x = {}) => `<div class="inc-row">
       <input class="nm" value="${esc(x.name || '')}" placeholder="Tên loại" aria-label="Tên loại">
@@ -789,15 +802,19 @@ function renderTypes() {
       <div class="tp-head"><span>Tên</span><span>Số tiền</span><span>Hạn</span></div>
       <div id="types">${typesList().map(row).join('')}</div>
       <button class="addrow" id="tpAdd">+ Thêm loại</button>
+      <div class="tp-dirty" id="tpDirty" hidden><span>● Có thay đổi chưa lưu</span><button id="tpReset">Huỷ thay đổi</button></div>
       <button class="btn" id="tpSave" style="width:100%">Lưu danh sách</button>
     </div>`;
   const box = $('#types');
+  const dirty = () => { typesDirty = true; $('#tpDirty').hidden = false; };
+  $('#tpReset').onclick = () => { typesDirty = false; renderTypes(); };
   box.oninput = e => {
+    dirty();
     if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
     if (e.target.classList.contains('dd')) { const n = Math.min(31, parseAmt(e.target.value)); e.target.value = n || ''; }
   };
-  box.onclick = e => { const x = e.target.closest('.x'); if (x) x.parentElement.remove(); };
-  $('#tpAdd').onclick = () => { box.insertAdjacentHTML('beforeend', row()); box.lastElementChild.querySelector('.nm').focus(); };
+  box.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); dirty(); } };
+  $('#tpAdd').onclick = () => { dirty(); box.insertAdjacentHTML('beforeend', row()); box.lastElementChild.querySelector('.nm').focus(); };
   $('#tpSave').onclick = () => {
     const types = [...box.querySelectorAll('.inc-row')].map(r => ({
       name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), due: parseAmt(r.querySelector('.dd').value) || '',
@@ -805,7 +822,7 @@ function renderTypes() {
     if (types.some(x => !x.name)) return toast('Nhập tên cho loại', true);
     if (new Set(types.map(x => x.name.toLowerCase())).size < types.length) return toast('Tên loại bị trùng', true);
     document.activeElement?.blur();
-    S.types = types; render();
+    typesDirty = false; S.types = types; render();
     mutate('setTypes', { types }, 'Đã lưu loại khoản chi');
   };
 }
@@ -869,6 +886,7 @@ function openEdit(id) {
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset;
+  if ((d.tab || d.goto) && (d.tab || d.goto) !== 'types' && !leaveTypes()) return;
   if (d.tab) { S.tab = d.tab; LS.set('ct_tab', d.tab); render(); scrollTo({ top: 0 }); }
   else if (d.goto) { if (sheetOpen) closeSheet(); S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
   else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
