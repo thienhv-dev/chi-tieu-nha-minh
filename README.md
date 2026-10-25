@@ -74,7 +74,7 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.
   Khi thêm khoản, chọn loại trong **dropdown** → tự điền tiền/hạn; khoản phát sinh chọn **Khác (tự nhập)**.
 - **Chi tiết trong khoản** (VD Vợ sinh hoạt 2,5tr → Điện thoại 500k, Máy tính góp 900k): số tiền của khoản là ngân sách,
-  mỗi dòng chi tiết đánh dấu đã trả riêng (chạm vào dòng ở danh sách). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
+  mỗi dòng chi tiết đánh dấu đã trả riêng (trong màn sửa khoản, bấm ✓ rồi Lưu). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
 - **Khoản chi**: bảng tóm tắt dự kiến chi / đã trả / thu nhập / dư-âm; chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
 - **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).

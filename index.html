@@ -622,7 +622,7 @@ function itemList() {
             <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn lại <span class="of">(${vnd(i.amount)} − ${vnd(dtPaid(i))})</span>` : vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div></span>
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
-        ${(i.details || []).length ? `<div class="dts">${i.details.map((d, n) => `<button class="${d.paid ? 'paid' : ''}" data-dt="${i.id}" data-n="${n}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'}">
+        ${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
           <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn">${esc(d.name)}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
       </div>`; }).join('')}
     <div class="total-row"><span>Tổng cộng</span><span>${vnd(t.all)}</span></div>
@@ -997,11 +997,6 @@ document.addEventListener('click', e => {
   else if (d.m === S.month) openMonthName();
   else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
   else if (d.edit) openEdit(d.edit);
-  else if (d.dt) {
-    const it = S.items.find(i => i.id === d.dt), dd = it && it.details[Number(d.n)]; if (!dd) return;
-    dd.paid = !dd.paid; render();
-    mutate('save', { item: { id: it.id, name: it.name, details: it.details } }, `${dd.name}: ${dd.paid ? 'Đã trả' : 'Chưa trả'}`);
-  }
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
     const status = NEXT_STATUS[it.status] || 'paid';
