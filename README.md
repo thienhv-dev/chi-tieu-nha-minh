@@ -27,7 +27,7 @@ Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup`
 
 | Tab | Cột | Ý nghĩa |
 |---|---|---|
-| `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount}]` |
+| `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount, paid}]` |
 | `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
 | `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: dropdown khi thêm khoản + dùng cho "Tạo từ mẫu" |
 | `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") |
@@ -73,7 +73,8 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.
   Khi thêm khoản, chọn loại trong **dropdown** → tự điền tiền/hạn; khoản phát sinh chọn **Khác (tự nhập)**.
-- **Chi tiết trong khoản** (VD Trả thẻ tín dụng → Điện thoại 3tr, Máy tính 3tr): thêm ở màn sửa khoản; số tiền của khoản tự = tổng chi tiết.
+- **Chi tiết trong khoản** (VD Vợ sinh hoạt 2,5tr → Điện thoại 500k, Máy tính góp 900k): số tiền của khoản là ngân sách,
+  mỗi dòng chi tiết đánh dấu đã trả riêng (chạm vào dòng ở danh sách). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
 - **Khoản chi**: bảng tóm tắt dự kiến chi / đã trả / thu nhập / dư-âm; chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
 - **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).

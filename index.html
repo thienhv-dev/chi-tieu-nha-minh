@@ -157,11 +157,22 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .x{width:36px;flex:none;color:var(--muted);font-size:22px;line-height:1}
 .inc-row .dd{width:58px;flex:none;text-align:center}
 .inc-row.dt input{padding:10px 12px;font-size:15px}
-.field input[readonly]{color:var(--muted);background:var(--gray-t)}
-.dts{margin-top:6px;display:grid;gap:3px;font-size:13px;color:var(--muted)}
-.dts div{display:flex;justify-content:space-between;gap:10px;padding-left:10px;border-left:2px solid var(--line)}
-.dts span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dts b{font-weight:500;white-space:nowrap}
+.s-part{background:var(--blue-t);color:var(--blue)}
+.row{flex-wrap:wrap}
+.row .amt .left{color:var(--ink);font-weight:600}
+.row .amt .of{white-space:nowrap}
+.row .dts{flex-basis:100%;display:grid;gap:2px;margin:-4px 0 0 38px}
+.row .dts button{display:flex;align-items:center;gap:8px;width:100%;padding:5px 0;font-size:13.5px;color:var(--muted);text-align:left}
+.row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.row .dts .paid .ck{background:var(--green);border-color:var(--green)}
+.row .dts .paid .dn{text-decoration:line-through}
+.row .dts .dn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .dts b{font-weight:500;white-space:nowrap}
+.inc-row .pd{width:40px;flex:none;border-radius:12px;border:1.5px solid var(--line);color:var(--line);font-weight:700}
+.inc-row .pd.on{background:var(--green);border-color:var(--green);color:#fff}
+.dt-sum{margin-top:8px;font-size:13.5px;color:var(--muted)}
+.dt-sum b{color:var(--ink)}
+.dt-sum .warn{color:var(--orange);margin-top:3px}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
 .field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
 .field select{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 40px 13px 14px;font:inherit;font-size:16px;color:inherit;outline:none;appearance:none;-webkit-appearance:none;
@@ -410,7 +421,7 @@ function localApi(p) {
   const ts = () => new Date().toISOString();
   const bulk = items => {
     if (db.items.some(r => r.month === p.month)) throw new Error('Tháng này đã có dữ liệu');
-    items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', details: (it.details || []).map(d => ({ ...d })), updatedAt: ts(), updatedBy: p.user }));
+    items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', details: (it.details || []).map(d => ({ ...d, paid: false })), updatedAt: ts(), updatedBy: p.user }));
   };
   const setInc = list => {
     const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 })).filter(x => x.name);
@@ -495,9 +506,26 @@ async function mutate(action, payload, msg) {
 }
 
 /* ============ render ============ */
+// Khoản "Chưa trả" có chi tiết đã trả → đã trả một phần; còn lại = số tiền − phần đã trả
+const dtPaid = i => (i.details || []).reduce((s, d) => s + (d.paid ? Number(d.amount) || 0 : 0), 0);
+const remainOf = i => i.status === 'none' ? Math.max(0, (Number(i.amount) || 0) - dtPaid(i)) : 0;
+// Nhãn trạng thái hiển thị: thêm "Đang trả" cho khoản đã trả một phần
+function stOf(i) {
+  if (i.status === 'none' && dtPaid(i) > 0) return remainOf(i) ? { label: 'Đang trả', cls: 's-part' } : STATUS.paid;
+  return STATUS[i.status] || STATUS.none;
+}
+
 function totals() {
   const t = { all: 0, paid: 0, none: 0, skip: 0, n: { all: 0, paid: 0, none: 0, skip: 0 } };
-  S.items.forEach(i => { const a = Number(i.amount) || 0; t.all += a; t[i.status] = (t[i.status] || 0) + a; t.n.all++; t.n[i.status] = (t.n[i.status] || 0) + 1; });
+  S.items.forEach(i => {
+    const a = Number(i.amount) || 0;
+    t.all += a; t.n.all++;
+    if (i.status === 'none') {
+      const left = remainOf(i);
+      t.paid += a - left; t.none += left;
+      t.n[left ? 'none' : 'paid']++;
+    } else { t[i.status] = (t[i.status] || 0) + a; t.n[i.status] = (t.n[i.status] || 0) + 1; }
+  });
   t.active = t.all - t.skip;
   return t;
 }
@@ -555,12 +583,12 @@ function monthCard(t) {
 // 3) Còn khoản nào chưa trả
 function dueCard(t) {
   // Có hạn nộp xếp trước (gần nhất lên đầu), còn lại theo số tiền
-  const due = S.items.filter(i => i.status === 'none').sort((a, b) => (Number(a.due) || 99) - (Number(b.due) || 99) || b.amount - a.amount), show = due.slice(0, 5);
+  const due = S.items.filter(i => remainOf(i) > 0).sort((a, b) => (Number(a.due) || 99) - (Number(b.due) || 99) || remainOf(b) - remainOf(a)), show = due.slice(0, 5);
   return `<div class="card c-pink">
     <div class="ct"><span class="ic">${ICON.clock}</span><h3>Còn phải trả${due.length ? ` <small class="cnt">${due.length}</small>` : ''}</h3><button class="right" data-goto="items">Xem tất cả</button></div>
     ${due.length ? show.map(i => `<div class="due">
-        <button class="nm" data-edit="${i.id}"><span class="l"><span>${esc(i.name)}</span>${dueTag(i)}</span><b>${vnd(i.amount)}</b></button>
-        <button class="pill ${STATUS[i.status].cls}" data-cycle="${i.id}">${STATUS[i.status].label}</button></div>`).join('')
+        <button class="nm" data-edit="${i.id}"><span class="l"><span>${esc(i.name)}</span>${dueTag(i)}</span><b>${vnd(remainOf(i))}</b></button>
+        <button class="pill ${stOf(i).cls}" data-cycle="${i.id}">${stOf(i).label}</button></div>`).join('')
       + (due.length > show.length ? `<button class="more" data-goto="items">+ ${due.length - show.length} khoản khác</button>` : '')
     : '<div class="lbl">✓ Đã trả hết các khoản tháng này</div>'}
   </div>`;
@@ -584,14 +612,19 @@ function dueTag(i) {
 function itemList() {
   const t = totals();
   return `<div class="list">
-    ${S.items.map((i, k) => `
+    ${S.items.map((i, k) => {
+      const part = i.status === 'none' && dtPaid(i) > 0, s = stOf(i);
+      return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
           <span class="no">${k + 1}</span>
-          <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div><div class="amt">${vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<div><span>${esc(d.name)}</span><b>${vnd(d.amount)}</b></div>`).join('')}</div>` : ''}</span>
+          <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div>
+            <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn lại <span class="of">(${vnd(i.amount)} − ${vnd(dtPaid(i))})</span>` : vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div></span>
         </button>
-        <button class="pill ${STATUS[i.status]?.cls || 's-none'}" data-cycle="${i.id}">${STATUS[i.status]?.label || 'Chưa trả'}</button>
-      </div>`).join('')}
+        <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
+        ${(i.details || []).length ? `<div class="dts">${i.details.map((d, n) => `<button class="${d.paid ? 'paid' : ''}" data-dt="${i.id}" data-n="${n}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'}">
+          <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn">${esc(d.name)}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
+      </div>`; }).join('')}
     <div class="total-row"><span>Tổng cộng</span><span>${vnd(t.all)}</span></div>
   </div>`;
 }
@@ -680,8 +713,8 @@ function cashPlan() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const dateOf = i => Number(i.due) ? new Date(y, m - 1, Math.min(Number(i.due), last)) : null;
   const days = d => Math.round((d - today) / 864e5);
-  const sum = a => a.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  const open = S.items.filter(i => i.status === 'none');
+  const sum = a => a.reduce((s, i) => s + remainOf(i), 0);
+  const open = S.items.filter(i => remainOf(i) > 0);
   const now = open.filter(i => { const d = dateOf(i); return !d || d <= today; });
   const groups = [];
   open.filter(i => { const d = dateOf(i); return d && d > today; }).sort((a, b) => dateOf(a) - dateOf(b)).forEach(i => {
@@ -866,6 +899,7 @@ function renderTypes() {
 const dtRow = (x = {}) => `<div class="inc-row dt">
     <input class="nm" value="${esc(x.name || '')}" placeholder="VD: Điện thoại" aria-label="Tên chi tiết">
     <input class="amt" inputmode="numeric" value="${Number(x.amount) ? Number(x.amount).toLocaleString('vi-VN') : ''}" placeholder="0" aria-label="Số tiền">
+    <button type="button" class="pd ${x.paid ? 'on' : ''}" aria-label="Đã trả">✓</button>
     <button type="button" class="x" aria-label="Xoá dòng">×</button></div>`;
 
 function openEdit(id) {
@@ -883,11 +917,11 @@ function openEdit(id) {
         <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
       </select>
       <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
-    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0">
-      <span class="hint" id="fAmtHint" hidden>= tổng các dòng chi tiết bên dưới</span></div>
-    <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc)</span></label>
+    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></div>
+    <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc · chạm ✓ khi đã trả)</span></label>
       <div id="fDts">${(it.details || []).map(dtRow).join('')}</div>
-      <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button></div>
+      <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button>
+      <div class="dt-sum" id="fDtSum" hidden></div></div>
     <div class="field"><label>Hạn nộp</label><div class="row2"><input id="fDue" type="date" min="${ymd(1)}" max="${ymd(lastDay)}" value="${it.due ? ymd(Math.min(Number(it.due), lastDay)) : ''}"><button id="fDueClr" type="button">Bỏ hạn</button></div><span class="hint">Lặp lại ngày này khi sao chép sang tháng sau</span></div>
     <div class="field"><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
     <div class="field"><label>Ghi chú</label><textarea id="fNote" rows="2" placeholder="Không bắt buộc">${esc(it.note)}</textarea></div>
@@ -895,21 +929,29 @@ function openEdit(id) {
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
   const amt = $('#fAmt');
   amt.oninput = () => { const n = parseAmt(amt.value); amt.value = n ? n.toLocaleString('vi-VN') : ''; };
-  // Có chi tiết → số tiền của khoản = tổng chi tiết (khoá ô số tiền)
+  // Chi tiết nằm trong số tiền của khoản; dòng nào đã trả thì trừ ra → còn lại
   const dts = $('#fDts');
-  const readDts = () => [...dts.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value) }));
-  const syncAmt = () => {
-    const sum = readDts().reduce((s, x) => s + x.amount, 0), on = sum > 0;
-    amt.readOnly = on; $('#fAmtHint').hidden = !on;
-    if (on) amt.value = sum.toLocaleString('vi-VN');
+  const readDts = () => [...dts.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on') }));
+  const showSum = () => {
+    const list = readDts().filter(x => x.name || x.amount), total = parseAmt(amt.value);
+    const paid = list.reduce((s, x) => s + (x.paid ? x.amount : 0), 0), inDt = list.reduce((s, x) => s + x.amount, 0);
+    $('#fDtSum').hidden = !list.length;
+    $('#fDtSum').innerHTML = `Đã trả <b>${vnd(paid)}</b> · Còn lại <b>${vnd(Math.max(0, total - paid))}</b>`
+      + (inDt > total ? `<div class="warn">Tổng chi tiết (${vnd(inDt)}) lớn hơn số tiền của khoản</div>` : '');
   };
+  amt.addEventListener('input', showSum);
   dts.oninput = e => {
     if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
-    syncAmt();
+    showSum();
   };
-  dts.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); syncAmt(); } };
+  dts.onclick = e => {
+    const x = e.target.closest('.x'), pd = e.target.closest('.pd');
+    if (x) x.parentElement.remove();
+    if (pd) pd.classList.toggle('on');
+    showSum();
+  };
   $('#fDtAdd').onclick = () => { dts.insertAdjacentHTML('beforeend', dtRow()); dts.lastElementChild.querySelector('.nm').focus(); };
-  syncAmt();
+  showSum();
   $('#sheet').querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     st = b.dataset.st; $('#sheet').querySelectorAll('[data-st]').forEach(x => x.classList.toggle('on', x === b));
   });
@@ -919,7 +961,8 @@ function openEdit(id) {
     $('#fName').hidden = !other;
     if (other) return $('#fName').focus();
     const tp = types[v];
-    if (tp.amount && !amt.readOnly) amt.value = Number(tp.amount).toLocaleString('vi-VN');
+    if (tp.amount) amt.value = Number(tp.amount).toLocaleString('vi-VN');
+    showSum();
     if (tp.due) $('#fDue').value = ymd(Math.min(Number(tp.due), lastDay));
   };
   $('#fDueClr').onclick = () => { $('#fDue').value = ''; };
@@ -954,6 +997,11 @@ document.addEventListener('click', e => {
   else if (d.m === S.month) openMonthName();
   else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
   else if (d.edit) openEdit(d.edit);
+  else if (d.dt) {
+    const it = S.items.find(i => i.id === d.dt), dd = it && it.details[Number(d.n)]; if (!dd) return;
+    dd.paid = !dd.paid; render();
+    mutate('save', { item: { id: it.id, name: it.name, details: it.details } }, `${dd.name}: ${dd.paid ? 'Đã trả' : 'Chưa trả'}`);
+  }
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
     const status = NEXT_STATUS[it.status] || 'paid';

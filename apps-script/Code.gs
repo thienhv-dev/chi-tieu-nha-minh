@@ -1,6 +1,6 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
- * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount}])
+ * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid}])
  * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới")
@@ -128,12 +128,13 @@ function clean_(o) {
   };
 }
 
-// Chi tiết của một khoản: mảng [{name, amount}]; trong Sheet lưu dạng chuỗi JSON
+// Chi tiết của một khoản: mảng [{name, amount, paid}]; trong Sheet lưu dạng chuỗi JSON
 function details_(v) {
   let a = v;
   if (!Array.isArray(a)) { try { a = JSON.parse(v || '[]'); } catch (_) { a = []; } }
   if (!Array.isArray(a)) return [];
-  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0 })).filter(x => x.name || x.amount);
+  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0, paid: !!(x && x.paid) }))
+    .filter(x => x.name || x.amount);
 }
 
 function itemRow_(o) {
@@ -190,7 +191,8 @@ function bulk_(month, items, user) {
   const now = new Date().toISOString();
   append_(s, items.map((it, i) => {
     const o = clean_({ id: Utilities.getUuid().slice(0, 8), month: month, order: i + 1, name: it.name,
-      amount: it.amount, status: 'none', note: it.note || '', due: it.due, details: it.details, updatedAt: now, updatedBy: user });
+      amount: it.amount, status: 'none', note: it.note || '', due: it.due, updatedAt: now, updatedBy: user,
+      details: details_(it.details).map(d => Object.assign(d, { paid: false })) }); // tháng mới: chi tiết về chưa trả
     return itemRow_(o);
   }));
 }
