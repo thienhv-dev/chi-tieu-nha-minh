@@ -64,11 +64,13 @@ Sau ~1 phút có link `https://<user>.github.io/chi-tieu-nha-minh/`.
 
 Hoặc **Netlify Drop**: kéo thả thư mục vào https://app.netlify.com/drop.
 
-Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** để dùng như app.
+Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** để dùng như app (có icon riêng, mở toàn màn hình).
 
 ## Dùng
 
 - Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
+- **Nhập tiền nhanh**: gõ `2tr5`, `500k`, `1.2tr`; hoặc dùng nút `000` / `+100k` / `+500k` / `+1tr` dưới ô số tiền.
+- Chạm nút trạng thái để đổi nhanh → có **Hoàn tác** trong 5 giây nếu lỡ tay.
 - **Đổi tên tháng**: chạm vào tháng đang chọn (có ✏️) → đặt tên riêng; bỏ trống để về "Tháng N".
 - **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.

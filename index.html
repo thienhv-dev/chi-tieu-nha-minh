@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#f2f1f6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chi tiêu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>Chi tiêu nhà mình</title>
 <style>
 :root{
@@ -176,6 +181,9 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .pd{width:40px;flex:none;border-radius:12px;border:1.5px solid var(--line);color:var(--line);font-weight:700}
 .inc-row .pd.on{background:var(--green);border-color:var(--green);color:#fff}
 .dt-sum{margin-top:8px;font-size:13.5px;color:var(--muted)}
+.quick{display:flex;gap:6px;margin-top:8px}
+.quick button{flex:1;padding:8px 0;border-radius:10px;background:var(--gray-t);font-weight:600;font-size:14px;color:var(--ink)}
+.quick button:active{background:var(--blue-t);color:var(--blue)}
 .dt-sum b{color:var(--ink)}
 .dt-sum .warn{color:var(--orange);margin-top:3px}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
@@ -265,6 +273,7 @@ nav button.on{color:var(--blue)}
 .toast.show{transform:translate(-50%,0)}
 .toast.err{background:var(--pink-t);border-color:color-mix(in srgb,var(--pink) 40%,transparent)}
 .toast svg{width:20px;height:20px;flex:none}
+.toast .undo{margin-left:6px;padding:4px 10px;border-radius:999px;background:var(--card);color:var(--blue);font-weight:700;font-size:13.5px;white-space:nowrap}
 .demo{background:var(--orange-t);color:var(--orange);font-size:12.5px;font-weight:600;border-radius:12px;padding:8px 12px;margin-top:10px}
 .spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
@@ -398,12 +407,15 @@ const ICON = {
 };
 
 let toastT;
-function toast(msg, err) {
+// undo: hàm hoàn tác → toast có nút "Hoàn tác" và hiện lâu hơn
+let undoFn = null;
+function toast(msg, err, undo) {
   const t = $('#toast');
   t.className = 'toast' + (err ? ' err' : '');
-  t.innerHTML = (err ? ICON.err : ICON.ok) + '<span>' + esc(msg) + '</span>';
+  t.innerHTML = (err ? ICON.err : ICON.ok) + '<span>' + esc(msg) + '</span>' + (undo ? '<button class="undo" data-undo>Hoàn tác</button>' : '');
+  undoFn = undo || null;
   requestAnimationFrame(() => t.classList.add('show'));
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2400);
+  clearTimeout(toastT); toastT = setTimeout(() => { t.classList.remove('show'); undoFn = null; }, undo ? 5000 : 2400);
 }
 
 /* ============ API ============ */
@@ -500,12 +512,12 @@ async function load(silent) {
   S.loading = false; render();
 }
 
-async function mutate(action, payload, msg) {
+async function mutate(action, payload, msg, undo) {
   S.busy = true;
   try {
     const j = await call(action, payload);
     setData(j);
-    if (msg) toast(msg);
+    if (msg) toast(msg, false, undo);
   } catch (e) { toast(e.message || 'Lưu thất bại', true); await load(true); }
   S.busy = false; render();
 }
@@ -630,7 +642,7 @@ function itemList() {
         ${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
           <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn"><i class="t">${esc(d.name)}</i>${d.note ? `<small>${esc(d.note)}</small>` : ''}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
       </div>`; }).join('')}
-    <div class="total-row"><span>Tổng cộng</span><span>${vnd(t.all)}</span></div>
+    <div class="total-row"><span>Tổng cộng${t.skip ? ' <small>(không tính Hoãn)</small>' : ''}</span><span>${vnd(t.active)}</span></div>
   </div>`;
 }
 
@@ -683,7 +695,7 @@ function openIncome() {
   const read = () => [...box.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value) }));
   const sum = () => { $('#incSum').textContent = vnd(read().reduce((s, x) => s + x.amount, 0)); };
   box.oninput = e => {
-    if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
+    if (e.target.classList.contains('amt')) fmtAmt(e.target);
     sum();
   };
   box.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); sum(); } };
@@ -844,7 +856,27 @@ function openWho() {
   };
 }
 
-function parseAmt(s) { return Number(String(s).replace(/\D/g, '')) || 0; }
+// Hiểu cả cách viết tắt: "2tr5" = 2.500.000, "1.2tr" = 1.200.000, "500k" = 500.000
+function parseAmt(s) {
+  s = String(s).toLowerCase().replace(/\s/g, '');
+  const m = s.match(/^(\d+(?:[.,]\d+)?)(tr|t|m|k|ng)(\d*)$/);
+  if (m) {
+    const unit = { tr: 1e6, t: 1e6, m: 1e6, k: 1e3, ng: 1e3 }[m[2]];
+    return Math.round(parseFloat(m[1].replace(',', '.')) * unit + (m[3] ? Number(m[3]) * unit / 10 ** m[3].length : 0));
+  }
+  return Number(s.replace(/\D/g, '')) || 0;
+}
+// Định dạng ô tiền khi gõ; đang gõ dạng tắt (có chữ) thì để yên, rời ô mới đổi thành số
+function fmtAmt(el) {
+  if (/[a-z]/i.test(el.value)) return;
+  const n = parseAmt(el.value); el.value = n ? n.toLocaleString('vi-VN') : '';
+}
+document.addEventListener('focusout', e => {
+  const el = e.target;
+  if (!el.matches || !el.matches('input.amt, input.amt-in') || !/[a-z]/i.test(el.value)) return;
+  const n = parseAmt(el.value); el.value = n ? n.toLocaleString('vi-VN') : '';
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+});
 
 // Danh sách loại: lấy từ Sheet; chưa có thì dùng TEMPLATE làm mặc định
 function typesList() {
@@ -884,7 +916,7 @@ function renderTypes() {
   $('#tpReset').onclick = () => { typesDirty = false; renderTypes(); };
   box.oninput = e => {
     dirty();
-    if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
+    if (e.target.classList.contains('amt')) fmtAmt(e.target);
     if (e.target.classList.contains('dd')) { const n = Math.min(31, parseAmt(e.target.value)); e.target.value = n || ''; }
   };
   box.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); dirty(); } };
@@ -923,7 +955,8 @@ function openEdit(id) {
         <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
       </select>
       <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
-    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></div>
+    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0 · VD 2tr5, 500k">
+      <div class="quick" id="fQuick"><button type="button" data-q="000">000</button><button type="button" data-q="100000">+100k</button><button type="button" data-q="500000">+500k</button><button type="button" data-q="1000000">+1tr</button></div></div>
     <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc · chạm ✓ khi đã trả)</span></label>
       <div id="fDts">${(it.details || []).map(dtRow).join('')}</div>
       <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button>
@@ -934,7 +967,14 @@ function openEdit(id) {
     ${id ? `<div class="lbl" style="margin:-4px 0 14px">Sửa lần cuối bởi ${esc(it.updatedBy || '—')}${it.updatedAt ? ' · ' + ago(it.updatedAt) : ''}</div>` : ''}
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
   const amt = $('#fAmt');
-  amt.oninput = () => { const n = parseAmt(amt.value); amt.value = n ? n.toLocaleString('vi-VN') : ''; };
+  amt.oninput = () => fmtAmt(amt);
+  // Nút nhập nhanh dưới ô số tiền: 000 = nhân 1.000, +X = cộng thêm
+  $('#fQuick').onclick = e => {
+    const b = e.target.closest('[data-q]'); if (!b) return;
+    const n = parseAmt(amt.value), q = b.dataset.q;
+    amt.value = (q === '000' ? n * 1000 : n + Number(q)).toLocaleString('vi-VN');
+    amt.dispatchEvent(new Event('input', { bubbles: true }));
+  };
   // Chi tiết nằm trong số tiền của khoản; dòng nào đã trả thì trừ ra → còn lại
   const dts = $('#fDts');
   const readDts = () => [...dts.querySelectorAll('.dtw')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on'), note: r.querySelector('.dnote').value.trim() }));
@@ -947,7 +987,7 @@ function openEdit(id) {
   };
   amt.addEventListener('input', showSum);
   dts.oninput = e => {
-    if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
+    if (e.target.classList.contains('amt')) fmtAmt(e.target);
     showSum();
   };
   dts.onclick = e => {
@@ -1005,10 +1045,14 @@ document.addEventListener('click', e => {
   else if (d.edit) openEdit(d.edit);
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
-    const status = NEXT_STATUS[it.status] || 'paid';
+    const status = NEXT_STATUS[it.status] || 'paid', prev = it.status, { id, name } = it;
     it.status = status; render();
-    mutate('save', { item: { id: it.id, name: it.name, status } }, `${it.name}: ${STATUS[status].label}`);
+    mutate('save', { item: { id, name, status } }, `${name}: ${STATUS[status].label}`, () => {
+      const x = S.items.find(i => i.id === id); if (x) { x.status = prev; render(); }
+      mutate('save', { item: { id, name, status: prev } }, 'Đã hoàn tác');
+    });
   }
+  else if ('undo' in d) { const f = undoFn; undoFn = null; $('#toast').classList.remove('show'); if (f) f(); }
   else if (d.copy) mutate('copyMonth', { from: d.copy }, 'Đã sao chép từ ' + mLabel(d.copy));
   else if ('template' in d) mutate('bulkCreate', { items: typesList() }, 'Đã tạo từ mẫu');
   else if ('add' in d) openEdit();
