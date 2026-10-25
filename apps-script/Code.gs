@@ -1,9 +1,8 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
- * Tab "Items"   : các khoản chi theo tháng
- * Tab "Income"  : các khoản thu theo tháng (tên + số tiền)
- * Tab "Types"   : danh sách loại khoản chi (tên, số tiền, hạn mặc định) — để chọn nhanh và "Tạo từ mẫu"
- * Tab "History" : lịch sử mọi thay đổi (ai, lúc nào, đổi gì)
+ * Tab "Items"  : các khoản chi theo tháng
+ * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
+ * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  *
  * Triển khai: Extensions → Apps Script → dán file này → Deploy → New deployment → Web app
  *   Execute as: Me · Who has access: Anyone
@@ -15,7 +14,6 @@
 const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due'];
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
 const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
-const HIST_H = ['ts', 'user', 'month', 'itemId', 'itemName', 'action', 'field', 'oldValue', 'newValue'];
 
 // doGet/doPost chỉ chạy khi có request tới URL /exec. Bấm ▶ Run trong editor thì e = undefined.
 function doGet(e) {
@@ -28,14 +26,13 @@ function doPost(e) {
   return handle_(p);
 }
 
-// Chọn hàm này rồi bấm ▶ Run để kiểm tra cấu hình: tạo sẵn 3 tab và báo PIN đã đặt chưa (xem Execution log).
+// Chọn hàm này rồi bấm ▶ Run để kiểm tra cấu hình: tạo sẵn các tab và báo PIN đã đặt chưa (xem Execution log).
 function setup() {
   sheet_('Items', ITEM_H);
   sheet_('Income', INC_H);
   sheet_('Types', TYPE_H);
-  sheet_('History', HIST_H);
   const pin = PropertiesService.getScriptProperties().getProperty('PIN');
-  Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types/History. PIN đã đặt (' + pin.length + ' ký tự).'
+  Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types. PIN đã đặt (' + pin.length + ' ký tự).'
                  : '⚠️ Đã tạo tab, nhưng CHƯA đặt PIN: Project Settings → Script properties → thêm PIN.');
 }
 
@@ -52,11 +49,11 @@ function handle_(p) {
       const user = String(p.user || '?');
       switch (p.action) {
         case 'save': save_(p.item, user); break;
-        case 'delete': del_(p.id, user); break;
-        case 'bulkCreate': bulk_(p.month, p.items || [], user, 'Tạo từ mẫu'); break;
+        case 'delete': del_(p.id); break;
+        case 'bulkCreate': bulk_(p.month, p.items || [], user); break;
         case 'copyMonth': copy_(p.from, p.month, user); break;
         case 'setIncome': setIncome_(p.month, p.income || [], user); break;
-        case 'setTypes': setTypes_(p.types || [], p.month, user); break;
+        case 'setTypes': setTypes_(p.types || [], user); break;
         default: return out_({ ok: false, error: 'Unknown action' });
       }
     } finally {
@@ -128,7 +125,6 @@ function clean_(o) {
 
 function list_(month) {
   const items = rows_(sheet_('Items', ITEM_H), ITEM_H);
-  const hist = rows_(sheet_('History', HIST_H), HIST_H);
   const inc = rows_(sheet_('Income', INC_H), INC_H);
   const months = Array.from(new Set(items.map(r => String(r.month)).concat(inc.map(r => String(r.month))))).sort();
   const incOf = m => inc.filter(r => String(r.month) === m).map(r => ({ name: String(r.name), amount: Number(r.amount) || 0 }));
@@ -141,17 +137,7 @@ function list_(month) {
     income: incOf(month),
     lastIncome: prev ? incOf(prev) : [],
     items: items.filter(r => String(r.month) === month).map(clean_).sort((a, b) => a.order - b.order),
-    history: hist.filter(r => String(r.month) === month).slice(-300).reverse().map(r => {
-      const o = {}; HIST_H.forEach(h => { o[h] = String(r[h]); }); return o;
-    }),
   };
-}
-
-function log_(user, month, item, action, field, oldV, newV) {
-  append_(sheet_('History', HIST_H), [[
-    new Date().toISOString(), user, month, item.id || '', item.name || '', action, field || '',
-    oldV === undefined ? '' : String(oldV), newV === undefined ? '' : String(newV),
-  ]]);
 }
 
 function save_(item, user) {
@@ -161,10 +147,6 @@ function save_(item, user) {
   const cur = all.find(r => String(r.id) === String(item.id));
 
   if (cur) {
-    ['name', 'amount', 'status', 'note', 'due'].forEach(f => {
-      const a = String(cur[f]), b = String(item[f] === undefined ? cur[f] : item[f]);
-      if (a !== b) log_(user, cur.month, { id: cur.id, name: item.name || cur.name }, 'update', f, a, b);
-    });
     const next = Object.assign(clean_(cur), item, { updatedAt: now, updatedBy: user });
     s.getRange(cur._row, 1, 1, ITEM_H.length).setNumberFormat('@').setValues([ITEM_H.map(h => String(next[h]))]);
   } else {
@@ -173,29 +155,24 @@ function save_(item, user) {
       id: Utilities.getUuid().slice(0, 8), updatedAt: now, updatedBy: user,
     }));
     append_(s, [ITEM_H.map(h => next[h])]);
-    log_(user, next.month, next, 'create', '', '', next.amount);
   }
 }
 
-function del_(id, user) {
+function del_(id) {
   const s = sheet_('Items', ITEM_H);
   const cur = rows_(s, ITEM_H).find(r => String(r.id) === String(id));
-  if (!cur) return;
-  s.deleteRow(cur._row);
-  log_(user, cur.month, cur, 'delete', '', cur.amount, '');
+  if (cur) s.deleteRow(cur._row);
 }
 
-function bulk_(month, items, user, label) {
+function bulk_(month, items, user) {
   const s = sheet_('Items', ITEM_H);
   if (rows_(s, ITEM_H).some(r => String(r.month) === month)) throw new Error('Tháng này đã có dữ liệu');
   const now = new Date().toISOString();
-  const rows = items.map((it, i) => {
+  append_(s, items.map((it, i) => {
     const o = clean_({ id: Utilities.getUuid().slice(0, 8), month: month, order: i + 1, name: it.name,
       amount: it.amount, status: 'none', note: it.note || '', due: it.due, updatedAt: now, updatedBy: user });
     return ITEM_H.map(h => o[h]);
-  });
-  append_(s, rows);
-  log_(user, month, {}, 'bulk', '', '', label + ' · ' + rows.length + ' khoản');
+  }));
 }
 
 function copy_(from, month, user) {
@@ -203,7 +180,7 @@ function copy_(from, month, user) {
     .filter(r => String(r.month) === from)
     .sort((a, b) => a.order - b.order);
   if (!src.length) throw new Error('Tháng ' + from + ' không có dữ liệu');
-  bulk_(month, src, user, 'Sao chép từ ' + from);
+  bulk_(month, src, user);
   // Chép luôn thu nhập nếu tháng mới chưa nhập
   const inc = rows_(sheet_('Income', INC_H), INC_H);
   if (!inc.some(r => String(r.month) === month)) {
@@ -211,32 +188,22 @@ function copy_(from, month, user) {
   }
 }
 
-// Thay toàn bộ danh sách thu nhập của tháng; ghi lịch sử phần thêm / sửa / xoá theo tên
+// Thay toàn bộ danh sách thu nhập của tháng
 function setIncome_(month, list, user) {
   const s = sheet_('Income', INC_H);
-  const cur = rows_(s, INC_H).filter(r => String(r.month) === month);
   const now = new Date().toISOString();
-  const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 })).filter(x => x.name);
-  const old = {}, neu = {};
-  cur.forEach(r => { old[String(r.name)] = Number(r.amount) || 0; });
-  next.forEach(x => { neu[x.name] = x.amount; });
-  next.forEach(x => {
-    if (!(x.name in old)) log_(user, month, x, 'income', 'amount', '', x.amount);
-    else if (old[x.name] !== x.amount) log_(user, month, x, 'income', 'amount', old[x.name], x.amount);
-  });
-  Object.keys(old).forEach(n => { if (!(n in neu)) log_(user, month, { name: n }, 'income', 'amount', old[n], ''); });
-  cur.map(r => r._row).sort((a, b) => b - a).forEach(r => s.deleteRow(r));
-  append_(s, next.map(x => [month, x.name, x.amount, now, user]));
+  rows_(s, INC_H).filter(r => String(r.month) === month).map(r => r._row)
+    .sort((a, b) => b - a).forEach(r => s.deleteRow(r));
+  append_(s, list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 }))
+    .filter(x => x.name).map(x => [month, x.name, x.amount, now, user]));
 }
 
 // Thay toàn bộ danh sách loại khoản chi (không theo tháng)
-function setTypes_(list, month, user) {
+function setTypes_(list, user) {
   const s = sheet_('Types', TYPE_H);
   const n = s.getLastRow();
   if (n > 1) s.getRange(2, 1, n - 1, TYPE_H.length).clearContent();
   const now = new Date().toISOString();
-  const rows = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' }))
-    .filter(x => x.name).map((x, i) => [i + 1, x.name, x.amount, x.due, now, user]);
-  append_(s, rows);
-  log_(user, month, { name: 'Loại khoản chi' }, 'types', '', '', rows.length);
+  append_(s, list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' }))
+    .filter(x => x.name).map((x, i) => [i + 1, x.name, x.amount, x.due, now, user]));
 }

@@ -157,9 +157,13 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .dd{width:58px;flex:none;text-align:center}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
 .field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
-.field .chk{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:14px;color:var(--muted);text-transform:none;letter-spacing:0}
-.field .chk input{width:18px;height:18px;padding:0;margin:0;flex:none;accent-color:var(--blue)}
-.field .chk[hidden]{display:none}
+.field select{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 40px 13px 14px;font:inherit;font-size:16px;color:inherit;outline:none;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+.field select:focus{border-color:var(--blue)}
+.field input[hidden]{display:none}
+.tp-head{display:flex;gap:8px;padding:0 4px 6px;font-size:12.5px;color:var(--muted)}
+.tp-head span:nth-child(1){flex:1.3}.tp-head span:nth-child(2){flex:1;text-align:right;padding-right:12px}.tp-head span:nth-child(3){width:58px;text-align:center}
+.tp-head::after{content:'';width:36px;flex:none}
 .addrow{color:var(--blue);font-weight:600;font-size:15px;padding:4px 0 14px}
 .inc-sum{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-size:15px}
 .ct h3 .cnt{font-size:13px;font-weight:600;background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
@@ -191,15 +195,6 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .btn.sm{padding:7px 14px;border-radius:999px;font-size:14px}
 .empty{text-align:center;padding:36px 20px;color:var(--muted)}
 .empty .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
-
-/* history */
-.hday{color:var(--muted);font-size:13px;font-weight:600;margin:18px 6px 8px;text-transform:uppercase;letter-spacing:.03em}
-.hitem{display:flex;gap:12px;padding:13px 16px;border-top:1px solid var(--line)}
-.hitem:first-child{border-top:0}
-.hitem .tx{flex:1;min-width:0;font-size:14.5px}
-.hitem .tm{color:var(--muted);font-size:12.5px;margin-top:3px}
-.hitem .chg{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;margin-left:6px}
-.hitem .chg s{color:var(--muted)}
 
 /* tabbar */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:center;
@@ -273,7 +268,7 @@ nav button.on{color:var(--blue)}
   <section id="tab-overview"></section>
   <section id="tab-items" hidden></section>
   <section id="tab-cash" hidden></section>
-  <section id="tab-history" hidden></section>
+  <section id="tab-types" hidden></section>
 </main>
 
 <button class="fab" id="fab" aria-label="Thêm khoản"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -282,7 +277,7 @@ nav button.on{color:var(--blue)}
   <button data-tab="overview" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Tổng quan</button>
   <button data-tab="items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>Khoản chi</button>
   <button data-tab="cash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Dòng tiền</button>
-  <button data-tab="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Lịch sử</button>
+  <button data-tab="types"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/></svg>Loại chi</button>
 </div></nav>
 
 <div class="mask" id="mask"></div>
@@ -315,7 +310,6 @@ const STATUS = {
   skip: { label: 'Hoãn', cls: 's-skip', color: 'var(--orange)' },
 };
 const NEXT_STATUS = { none: 'paid', paid: 'skip', skip: 'none' };
-const FIELD_VI = { name: 'tên', amount: 'số tiền', status: 'trạng thái', note: 'ghi chú', due: 'hạn nộp' };
 
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -327,8 +321,8 @@ const S = {
   user: LS.get('ct_user', ''),
   pin: LS.get('ct_pin', ''),
   month: ym(now),
-  tab: LS.get('ct_tab', 'overview'),
-  items: [], history: [], months: [], income: [], lastIncome: [], types: [],
+  tab: ['overview', 'items', 'cash', 'types'].includes(LS.get('ct_tab', '')) ? LS.get('ct_tab', '') : 'overview',
+  items: [], months: [], income: [], lastIncome: [], types: [],
   loading: false, busy: false,
 };
 const DEMO = !CONFIG.API_URL;
@@ -358,13 +352,6 @@ function ago(iso) {
   if (s < 3600) return Math.floor(s / 60) + ' phút trước';
   if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
   return Math.floor(s / 86400) + ' ngày trước';
-}
-function hhmm(iso) { const d = new Date(iso); return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }
-function dayKey(iso) {
-  const d = new Date(iso), t = new Date(); const y = new Date(Date.now() - 864e5);
-  if (d.toDateString() === t.toDateString()) return 'Hôm nay';
-  if (d.toDateString() === y.toDateString()) return 'Hôm qua';
-  return d.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' });
 }
 const ICON = {
   wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></svg>',
@@ -405,52 +392,35 @@ async function call(action, payload = {}) {
 function localApi(p) {
   let db = LS.get('ct_demo_db', null);
   if (!db || db.v !== DEMO_V) db = seedDemo(); // dữ liệu demo bản cũ → tạo lại
-  db.types ||= [];
   const ts = () => new Date().toISOString();
-  const log = (month, item, action, field, o, n) => db.history.push({ ts: ts(), user: p.user, month, itemId: item.id || '', itemName: item.name || '', action, field: field || '', oldValue: o == null ? '' : String(o), newValue: n == null ? '' : String(n) });
-  const bulk = (items, label) => {
+  const bulk = items => {
     if (db.items.some(r => r.month === p.month)) throw new Error('Tháng này đã có dữ liệu');
     items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', updatedAt: ts(), updatedBy: p.user }));
-    log(p.month, {}, 'bulk', '', '', label + ' · ' + items.length + ' khoản');
   };
   const setInc = list => {
     const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 })).filter(x => x.name);
-    const old = Object.fromEntries(db.income.filter(r => r.month === p.month).map(r => [r.name, r.amount]));
-    const neu = Object.fromEntries(next.map(x => [x.name, x.amount]));
-    next.forEach(x => {
-      if (!(x.name in old)) log(p.month, x, 'income', 'amount', '', x.amount);
-      else if (old[x.name] !== x.amount) log(p.month, x, 'income', 'amount', old[x.name], x.amount);
-    });
-    Object.keys(old).forEach(n => { if (!(n in neu)) log(p.month, { name: n }, 'income', 'amount', old[n], ''); });
     db.income = db.income.filter(r => r.month !== p.month).concat(next.map(x => ({ month: p.month, ...x, updatedAt: ts(), updatedBy: p.user })));
   };
   if (p.action === 'save') {
     const it = p.item, cur = db.items.find(r => r.id === it.id);
-    if (cur) {
-      ['name', 'amount', 'status', 'note', 'due'].forEach(f => {
-        if (it[f] !== undefined && String(cur[f] ?? '') !== String(it[f])) log(cur.month, { id: cur.id, name: it.name || cur.name }, 'update', f, cur[f], it[f]);
-      });
-      Object.assign(cur, it, { updatedAt: ts(), updatedBy: p.user });
-    } else {
+    if (cur) Object.assign(cur, it, { updatedAt: ts(), updatedBy: p.user });
+    else {
       const order = Math.max(0, ...db.items.filter(r => r.month === it.month).map(r => r.order)) + 1;
-      const n = { status: 'none', note: '', order, ...it, id: Math.random().toString(36).slice(2, 10), updatedAt: ts(), updatedBy: p.user };
-      db.items.push(n); log(n.month, n, 'create', '', '', n.amount);
+      db.items.push({ status: 'none', note: '', order, ...it, id: Math.random().toString(36).slice(2, 10), updatedAt: ts(), updatedBy: p.user });
     }
   } else if (p.action === 'delete') {
-    const i = db.items.findIndex(r => r.id === p.id);
-    if (i >= 0) { const [c] = db.items.splice(i, 1); log(c.month, c, 'delete', '', c.amount, ''); }
+    db.items = db.items.filter(r => r.id !== p.id);
   } else if (p.action === 'bulkCreate') {
-    bulk(p.items, 'Tạo từ mẫu');
+    bulk(p.items);
   } else if (p.action === 'copyMonth') {
     const src = db.items.filter(r => r.month === p.from).sort((a, b) => a.order - b.order);
     if (!src.length) throw new Error('Tháng ' + p.from + ' không có dữ liệu');
-    bulk(src, 'Sao chép từ ' + p.from);
+    bulk(src);
     if (!db.income.some(r => r.month === p.month)) setInc(db.income.filter(r => r.month === p.from));
   } else if (p.action === 'setIncome') {
     setInc(p.income || []);
   } else if (p.action === 'setTypes') {
     db.types = (p.types || []).map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' })).filter(x => x.name);
-    log(p.month, { name: 'Loại khoản chi' }, 'types', '', '', db.types.length);
   }
   LS.set('ct_demo_db', db);
   const incOf = m => db.income.filter(r => r.month === m).map(r => ({ name: r.name, amount: r.amount }));
@@ -462,21 +432,16 @@ function localApi(p) {
     income: incOf(p.month),
     lastIncome: prev ? incOf(prev) : [],
     items: db.items.filter(r => r.month === p.month).sort((a, b) => a.order - b.order),
-    history: db.history.filter(r => r.month === p.month).slice(-300).reverse(),
   };
 }
-const DEMO_V = 4; // tăng khi dữ liệu mẫu đổi cấu trúc
+const DEMO_V = 5; // tăng khi dữ liệu mẫu đổi cấu trúc
 function seedDemo() {
   const m = ym(new Date()), t = new Date().toISOString();
   return {
     v: DEMO_V,
     items: TEMPLATE.map(([name, amount, due], i) => ({ id: 'd' + i, month: m, order: i + 1, name, amount, due, status: i < 2 ? 'paid' : 'none', note: '', updatedAt: t, updatedBy: 'Vợ' })),
     income: [['Lương Chồng', 18000000], ['Lương Vợ', 15000000]].map(([name, amount]) => ({ month: m, name, amount, updatedAt: t, updatedBy: 'Chồng' })),
-    history: [
-      { ts: t, user: 'Vợ', month: m, itemId: '', itemName: '', action: 'bulk', field: '', oldValue: '', newValue: 'Tạo từ mẫu · 9 khoản' },
-      { ts: t, user: 'Vợ', month: m, itemId: 'd0', itemName: 'Tiền Nhà', action: 'update', field: 'status', oldValue: 'none', newValue: 'paid' },
-      { ts: t, user: 'Chồng', month: m, itemId: 'd1', itemName: 'Tiền ăn sinh hoạt chung', action: 'update', field: 'status', oldValue: 'none', newValue: 'paid' },
-    ],
+    types: TEMPLATE.map(([name, amount, due]) => ({ name, amount, due })),
   };
 }
 
@@ -484,7 +449,7 @@ function seedDemo() {
 function setData(j) {
   j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
   const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
-  Object.assign(S, { items: j.items, history: j.history, months, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
+  Object.assign(S, { items: j.items, months, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
 }
 
 async function load(silent) {
@@ -523,8 +488,7 @@ function bigNum(n) { const [v, u] = compact(n); return `${v}<small>${u}</small>`
 function renderHeader() {
   $('#meAv').outerHTML = avatar(S.user).replace('class="av"', 'class="av" id="meAv"');
   $('#meName').textContent = S.user || 'Chọn';
-  const last = S.history[0];
-  $('#sub').textContent = S.loading ? 'Đang tải…' : mLong(S.month) + (last ? ` · ${last.user} sửa ${ago(last.ts)}` : '');
+  $('#sub').textContent = S.loading ? 'Đang tải…' : mLong(S.month);
   $('#demoNote').hidden = !DEMO;
 
   const cur = ym(new Date());
@@ -538,7 +502,7 @@ function renderOverview() {
   const el = $('#tab-overview');
   const t = totals();
   if (!S.items.length) { el.innerHTML = `<div class="grid">${monthCard(t)}</div>` + emptyState(); return; }
-  el.innerHTML = `<div class="grid">${monthCard(t)}${dueCard(t)}${recentCard()}</div>`;
+  el.innerHTML = `<div class="grid">${monthCard(t)}${dueCard(t)}</div>`;
 }
 
 // 1) Tháng này dư hay thiếu, đã trả được bao nhiêu
@@ -595,13 +559,6 @@ function dueTag(i) {
   return `<span class="due-tag ${d.late ? 'late' : d.soon ? 'soon' : ''}">Hạn ${d.label}</span>`;
 }
 
-// 4) Ai vừa sửa gì
-function recentCard() {
-  return `<div class="card">
-    <div class="ct"><span class="ic" style="background:var(--gray-t);color:var(--muted)">${ICON.hist}</span><h3>Gần đây</h3><button class="right" data-goto="history">Xem tất cả</button></div>
-    ${S.history.slice(0, 3).map(h => histRow(h, true)).join('') || '<div class="lbl">Chưa có thay đổi</div>'}
-  </div>`;
-}
 
 function itemList() {
   const t = totals();
@@ -669,27 +626,10 @@ function renderItems() {
   const el = $('#tab-items');
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
   el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${mLong(S.month)}</h2></div>${itemSummary()}
-    <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-types>Loại khoản chi</button></div>${itemList()}
+    <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-goto="types">Loại chi</button></div>${itemList()}
     <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi nhanh</div>`;
 }
 
-function histText(h) {
-  const who = `<b>${esc(h.user)}</b>`, nm = `<b>${esc(h.itemName)}</b>`;
-  if (h.action === 'create') return `${who} thêm ${nm} · ${vnd(h.newValue)}`;
-  if (h.action === 'delete') return `${who} xoá ${nm} · ${vnd(h.oldValue)}`;
-  if (h.action === 'bulk') return `${who} ${esc(h.newValue)}`;
-  if (h.action === 'types') return `${who} cập nhật danh sách loại khoản chi · ${esc(h.newValue)} loại`;
-  if (h.action === 'income') {
-    if (h.newValue === '') return `${who} xoá thu nhập ${nm} · ${vnd(h.oldValue)}`;
-    if (Number(h.oldValue)) return `${who} sửa thu nhập ${nm}<div class="chg"><s>${vnd(h.oldValue)}</s> → ${vnd(h.newValue)}</div>`;
-    return `${who} thêm thu nhập ${nm} · ${vnd(h.newValue)}`;
-  }
-  const fmt = v => h.field === 'due' ? (v ? 'ngày ' + esc(v) : '<i>không có</i>') : h.field === 'amount' ? vnd(v) : h.field === 'status' ? `<span class="pill ${STATUS[v]?.cls}" style="min-width:0;padding:3px 9px;font-size:12px">${STATUS[v]?.label || esc(v)}</span>` : (esc(v) || '<i>trống</i>');
-  return `${who} đổi ${FIELD_VI[h.field] || esc(h.field)} ${nm}<div class="chg"><s>${fmt(h.oldValue)}</s> → ${fmt(h.newValue)}</div>`;
-}
-function histRow(h, compactView) {
-  return `<div class="hitem" ${compactView ? 'style="padding:10px 0"' : ''}>${avatar(h.user, 32)}<div class="tx">${histText(h)}<div class="tm">${compactView ? ago(h.ts) : hhmm(h.ts)}</div></div></div>`;
-}
 /* ============ dòng tiền ============
  * Tiền đang có = Thu − Đã trả. Trừ dần các khoản Chưa trả theo hạn nộp để biết
  * mỗi phần tiền được để không bao lâu (có thể đầu tư tạm, VD mua vàng vài tuần).
@@ -777,13 +717,6 @@ function renderCash() {
   </div>`;
 }
 
-function renderHistory() {
-  const el = $('#tab-history');
-  if (!S.history.length) { el.innerHTML = `<div class="card empty" style="margin-top:8px">Chưa có thay đổi nào trong ${mLong(S.month).toLowerCase()}.</div>`; return; }
-  const groups = {};
-  S.history.forEach(h => (groups[dayKey(h.ts)] ||= []).push(h));
-  el.innerHTML = Object.entries(groups).map(([d, hs]) => `<div class="hday">${esc(d)}</div><div class="list">${hs.map(h => histRow(h)).join('')}</div>`).join('');
-}
 
 function emptyState() {
   const prev = [...S.months].filter(m => m < S.month).pop();
@@ -800,13 +733,13 @@ function emptyState() {
 
 function render() {
   renderHeader();
-  ['overview', 'items', 'cash', 'history'].forEach(t => { $('#tab-' + t).hidden = S.tab !== t; });
+  ['overview', 'items', 'cash', 'types'].forEach(t => { $('#tab-' + t).hidden = S.tab !== t; });
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
-  $('#fab').hidden = S.tab === 'history' || S.tab === 'cash' || !S.user;
+  $('#fab').hidden = S.tab === 'types' || S.tab === 'cash' || !S.user;
   if (S.tab === 'overview') renderOverview();
   if (S.tab === 'items') renderItems();
   if (S.tab === 'cash') renderCash();
-  if (S.tab === 'history') renderHistory();
+  if (S.tab === 'types') renderTypes();
 }
 
 /* ============ sheets ============ */
@@ -841,18 +774,23 @@ function typesList() {
   return S.types.length ? S.types : TEMPLATE.map(([name, amount, due]) => ({ name, amount, due }));
 }
 
-function openTypes() {
+function renderTypes() {
+  const el = $('#tab-types');
+  if (el.contains(document.activeElement)) return; // đang gõ dở thì không vẽ lại (VD lúc tự làm mới)
   const fmt = n => Number(n) ? Number(n).toLocaleString('vi-VN') : '';
   const row = (x = {}) => `<div class="inc-row">
       <input class="nm" value="${esc(x.name || '')}" placeholder="Tên loại" aria-label="Tên loại">
       <input class="amt" inputmode="numeric" value="${fmt(x.amount)}" placeholder="Số tiền" aria-label="Số tiền mặc định">
       <input class="dd" inputmode="numeric" maxlength="2" value="${x.due || ''}" placeholder="Hạn" aria-label="Hạn nộp (ngày trong tháng)">
       <button class="x" aria-label="Xoá dòng">×</button></div>`;
-  openSheet(`<h3>Loại khoản chi</h3>
-    <div class="lbl" style="margin:-6px 0 12px">Dùng để chọn nhanh khi thêm khoản và cho nút "Tạo từ mẫu". Hạn = ngày trong tháng (1–31), bỏ trống nếu không có.</div>
-    <div id="types">${typesList().map(row).join('')}</div>
-    <button class="addrow" id="tpAdd">+ Thêm loại</button>
-    <div class="acts"><button class="btn ghost" id="tpCancel">Huỷ</button><button class="btn" id="tpSave">Lưu</button></div>`);
+  el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>Loại khoản chi</h2></div>
+    <div class="card">
+      <div class="lbl" style="margin-bottom:14px">Hiện trong ô chọn khi thêm khoản chi và dùng cho nút "Tạo từ mẫu". Chọn loại nào thì số tiền và hạn (ngày trong tháng) của loại đó được điền sẵn.</div>
+      <div class="tp-head"><span>Tên</span><span>Số tiền</span><span>Hạn</span></div>
+      <div id="types">${typesList().map(row).join('')}</div>
+      <button class="addrow" id="tpAdd">+ Thêm loại</button>
+      <button class="btn" id="tpSave" style="width:100%">Lưu danh sách</button>
+    </div>`;
   const box = $('#types');
   box.oninput = e => {
     if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
@@ -860,14 +798,14 @@ function openTypes() {
   };
   box.onclick = e => { const x = e.target.closest('.x'); if (x) x.parentElement.remove(); };
   $('#tpAdd').onclick = () => { box.insertAdjacentHTML('beforeend', row()); box.lastElementChild.querySelector('.nm').focus(); };
-  $('#tpCancel').onclick = closeSheet;
   $('#tpSave').onclick = () => {
     const types = [...box.querySelectorAll('.inc-row')].map(r => ({
       name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), due: parseAmt(r.querySelector('.dd').value) || '',
     })).filter(x => x.name || x.amount);
     if (types.some(x => !x.name)) return toast('Nhập tên cho loại', true);
     if (new Set(types.map(x => x.name.toLowerCase())).size < types.length) return toast('Tên loại bị trùng', true);
-    closeSheet(); S.types = types; render();
+    document.activeElement?.blur();
+    S.types = types; render();
     mutate('setTypes', { types }, 'Đã lưu loại khoản chi');
   };
 }
@@ -876,13 +814,17 @@ function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
   if (!it) return;
   let st = it.status || 'none';
+  const types = typesList(), custom = !!id && !types.some(x => x.name === it.name);
   const [yy, mm] = S.month.split('-').map(Number), lastDay = new Date(yy, mm, 0).getDate();
   const ymd = d => S.month + '-' + String(d).padStart(2, '0');
   openSheet(`<h3>${id ? 'Sửa khoản chi' : 'Thêm khoản chi'}</h3>
-    <div class="field"><label class="lrow">Tên khoản <button type="button" data-types>Quản lý loại</button></label>
-      <input id="fName" list="typeList" autocomplete="off" value="${esc(it.name)}" placeholder="Chọn loại có sẵn hoặc gõ tên mới">
-      <datalist id="typeList">${typesList().map(x => `<option value="${esc(x.name)}">${x.amount ? vnd(x.amount) : ''}${x.due ? ' · hạn ngày ' + x.due : ''}</option>`).join('')}</datalist>
-      <label class="chk" id="fNewType" hidden><input type="checkbox" id="fSaveType" checked> Lưu tên này vào danh sách loại</label></div>
+    <div class="field"><label class="lrow">Loại khoản chi <button type="button" data-goto="types">Sửa danh sách</button></label>
+      <select id="fType">
+        ${id ? '' : '<option value="" disabled selected>— Chọn loại —</option>'}
+        ${types.map((x, k) => `<option value="${k}" ${id && x.name === it.name ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}
+        <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
+      </select>
+      <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
     <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></div>
     <div class="field"><label>Hạn nộp</label><div class="row2"><input id="fDue" type="date" min="${ymd(1)}" max="${ymd(lastDay)}" value="${it.due ? ymd(Math.min(Number(it.due), lastDay)) : ''}"><button id="fDueClr" type="button">Bỏ hạn</button></div><span class="hint">Lặp lại ngày này khi sao chép sang tháng sau</span></div>
     <div class="field"><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
@@ -894,15 +836,15 @@ function openEdit(id) {
   $('#sheet').querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     st = b.dataset.st; $('#sheet').querySelectorAll('[data-st]').forEach(x => x.classList.toggle('on', x === b));
   });
-  // Chọn đúng tên một loại → tự điền số tiền / hạn nếu đang trống; tên mới → hỏi có lưu thành loại không
-  const findType = n => typesList().find(x => x.name.toLowerCase() === n.trim().toLowerCase());
-  $('#fName').oninput = () => {
-    const n = $('#fName').value, tp = findType(n);
-    $('#fNewType').hidden = !n.trim() || !!tp;
-    if (tp && !parseAmt(amt.value) && tp.amount) amt.value = Number(tp.amount).toLocaleString('vi-VN');
-    if (tp && !$('#fDue').value && tp.due) $('#fDue').value = ymd(Math.min(Number(tp.due), lastDay));
+  // Chọn loại → điền sẵn số tiền / hạn của loại đó; "Khác" → hiện ô tự nhập tên
+  $('#fType').onchange = () => {
+    const v = $('#fType').value, other = v === 'other';
+    $('#fName').hidden = !other;
+    if (other) return $('#fName').focus();
+    const tp = types[v];
+    if (tp.amount) amt.value = Number(tp.amount).toLocaleString('vi-VN');
+    if (tp.due) $('#fDue').value = ymd(Math.min(Number(tp.due), lastDay));
   };
-  if (!id) setTimeout(() => $('#fName').focus(), 250);
   $('#fDueClr').onclick = () => { $('#fDue').value = ''; };
   $('#fCancel') && ($('#fCancel').onclick = closeSheet);
   $('#fDel') && ($('#fDel').onclick = () => {
@@ -911,15 +853,15 @@ function openEdit(id) {
     mutate('delete', { id }, 'Đã xoá');
   });
   $('#fSave').onclick = () => {
-    const name = $('#fName').value.trim(), amount = parseAmt(amt.value), note = $('#fNote').value.trim();
+    const tv = $('#fType').value, amount = parseAmt(amt.value), note = $('#fNote').value.trim();
+    if (tv === '') return toast('Chọn loại khoản chi', true);
+    const name = tv === 'other' ? $('#fName').value.trim() : types[tv].name;
     if (!name) return toast('Nhập tên khoản', true);
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
     const item = id ? { id, name, amount, status: st, note, due } : { month: S.month, name, amount, status: st, note, due };
-    const addType = !findType(name) && $('#fSaveType').checked;
     closeSheet();
     if (id) { Object.assign(it, item); render(); }
-    mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản')
-      .then(() => addType && mutate('setTypes', { types: [...typesList(), { name, amount, due }] }, `Đã lưu "${name}" vào danh sách loại`));
+    mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản');
   };
 }
 
@@ -928,8 +870,8 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset;
   if (d.tab) { S.tab = d.tab; LS.set('ct_tab', d.tab); render(); scrollTo({ top: 0 }); }
-  else if (d.goto) { S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
-  else if (d.m) { S.month = d.m; S.items = []; S.history = []; S.income = []; S.lastIncome = []; load(); }
+  else if (d.goto) { if (sheetOpen) closeSheet(); S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
+  else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
   else if (d.edit) openEdit(d.edit);
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
@@ -939,15 +881,14 @@ document.addEventListener('click', e => {
   }
   else if (d.copy) mutate('copyMonth', { from: d.copy }, 'Đã sao chép từ ' + mLabel(d.copy));
   else if ('template' in d) mutate('bulkCreate', { items: typesList() }, 'Đã tạo từ mẫu');
-  else if ('types' in d) openTypes();
   else if ('add' in d) openEdit();
   else if ('income' in d) openIncome();
 });
 $('#fab').onclick = () => openEdit();
 $('#mask').onclick = () => { if (S.user) closeSheet(); };
 $('#meBtn').onclick = openWho;
-$('#prevM').onclick = () => { S.month = addMonth(S.month, -1); S.items = []; S.history = []; S.income = []; S.lastIncome = []; load(); };
-$('#nextM').onclick = () => { S.month = addMonth(S.month, 1); S.items = []; S.history = []; S.income = []; S.lastIncome = []; load(); };
+$('#prevM').onclick = () => { S.month = addMonth(S.month, -1); S.items = []; S.income = []; S.lastIncome = []; load(); };
+$('#nextM').onclick = () => { S.month = addMonth(S.month, 1); S.items = []; S.income = []; S.lastIncome = []; load(); };
 
 setInterval(() => { if (!document.hidden && !sheetOpen && !S.busy) load(true); }, CONFIG.POLL_MS);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !sheetOpen) load(true); });
