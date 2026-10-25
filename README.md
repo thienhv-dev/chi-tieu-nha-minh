@@ -7,7 +7,7 @@ Mở `index.html` khi chưa cấu hình `API_URL` = **chế độ demo** (lưu t
 
 ```
 index.html  ──fetch──▶  Apps Script Web App (/exec)  ──▶  Google Sheet
-(GitHub Pages)          kiểm tra PIN                      tab Items · Income · Types
+(GitHub Pages)          kiểm tra PIN                      tab Items · Income · Types · Months
 ```
 
 ## 1. Tạo DB + backend (Google Sheet + Apps Script)
@@ -23,13 +23,14 @@ index.html  ──fetch──▶  Apps Script Web App (/exec)  ──▶  Google
    (cảnh báo này bình thường vì script do chính bạn viết).
 6. Copy **Web app URL** (đuôi `/exec`).
 
-Script tự tạo 3 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup` rồi bấm ▶ Run):
+Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup` rồi bấm ▶ Run):
 
 | Tab | Cột | Ý nghĩa |
 |---|---|---|
 | `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng) |
 | `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
 | `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: dropdown khi thêm khoản + dùng cho "Tạo từ mẫu" |
+| `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") |
 
 > Không lưu lịch sử thay đổi (cho nhẹ). Sheet cũ còn tab `History` thì có thể xoá tay.
 
@@ -68,6 +69,7 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 ## Dùng
 
 - Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
+- **Đổi tên tháng**: chạm vào tháng đang chọn (có ✏️) → đặt tên riêng; bỏ trống để về "Tháng N".
 - **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.
   Khi thêm khoản, chọn loại trong **dropdown** → tự điền tiền/hạn; khoản phát sinh chọn **Khác (tự nhập)**.

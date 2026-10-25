@@ -47,7 +47,8 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .seg .months{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;scroll-snap-type:x mandatory}
 .seg .months::-webkit-scrollbar{display:none}
 .seg button{border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;scroll-snap-align:center}
-.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1);display:inline-flex;align-items:center;gap:5px}
+.seg button.on svg{width:12px;height:12px;color:var(--muted)}
 .seg .arrow{padding:7px 10px;color:var(--ink)}
 
 /* Cards */
@@ -325,7 +326,7 @@ const S = {
   pin: LS.get('ct_pin', ''),
   month: ym(now),
   tab: ['overview', 'items', 'cash', 'types'].includes(LS.get('ct_tab', '')) ? LS.get('ct_tab', '') : 'overview',
-  items: [], months: [], income: [], lastIncome: [], types: [],
+  items: [], months: [], monthNames: {}, income: [], lastIncome: [], types: [],
   loading: false, busy: false,
 };
 const DEMO = !CONFIG.API_URL;
@@ -333,8 +334,11 @@ const DEMO = !CONFIG.API_URL;
 /* ============ helpers ============ */
 function ym(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function addMonth(m, n) { const [y, mo] = m.split('-').map(Number); return ym(new Date(y, mo - 1 + n, 1)); }
-// Nhãn tháng: "Tháng 10"; khác năm hiện tại thì thêm năm, VD "Tháng 1/2027"
-function mLabel(m) { const [y, mo] = m.split('-'); return 'Tháng ' + Number(mo) + (Number(y) === new Date().getFullYear() ? '' : '/' + y); }
+// Nhãn tháng: tên riêng nếu đã đặt; mặc định "Tháng 10", khác năm hiện tại thì thêm năm "Tháng 1/2027"
+function mDefault(m) { const [y, mo] = m.split('-'); return 'Tháng ' + Number(mo) + (Number(y) === new Date().getFullYear() ? '' : '/' + y); }
+function mLabel(m) { return S.monthNames[m] || mDefault(m); }
+// Tiêu đề tháng: tên riêng nếu có, không thì "Tháng 10/2026"
+function mTitle(m) { return S.monthNames[m] || mLong(m); }
 function mLong(m) { const [y, mo] = m.split('-'); return 'Tháng ' + Number(mo) + '/' + y; }
 const vnd = n => (Number(n) || 0).toLocaleString('vi-VN') + ' đ';
 function compact(n) {
@@ -396,6 +400,7 @@ async function call(action, payload = {}) {
 function localApi(p) {
   let db = LS.get('ct_demo_db', null);
   if (!db || db.v !== DEMO_V) db = seedDemo(); // dữ liệu demo bản cũ → tạo lại
+  db.monthNames ||= {};
   const ts = () => new Date().toISOString();
   const bulk = items => {
     if (db.items.some(r => r.month === p.month)) throw new Error('Tháng này đã có dữ liệu');
@@ -423,6 +428,9 @@ function localApi(p) {
     if (!db.income.some(r => r.month === p.month)) setInc(db.income.filter(r => r.month === p.from));
   } else if (p.action === 'setIncome') {
     setInc(p.income || []);
+  } else if (p.action === 'setMonthName') {
+    const n = String(p.name || '').trim().slice(0, 30);
+    if (n) db.monthNames[p.month] = n; else delete db.monthNames[p.month];
   } else if (p.action === 'setTypes') {
     db.types = (p.types || []).map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' })).filter(x => x.name);
   }
@@ -431,7 +439,8 @@ function localApi(p) {
   const prev = [...new Set(db.income.map(r => r.month))].filter(m => m < p.month).sort().pop();
   return {
     ok: true,
-    months: [...new Set([...db.items, ...db.income].map(r => r.month))].sort(),
+    months: [...new Set([...db.items, ...db.income].map(r => r.month).concat(Object.keys(db.monthNames)))].sort(),
+    monthNames: db.monthNames,
     types: db.types,
     income: incOf(p.month),
     lastIncome: prev ? incOf(prev) : [],
@@ -453,7 +462,7 @@ function seedDemo() {
 function setData(j) {
   j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
   const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
-  Object.assign(S, { items: j.items, months, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
+  Object.assign(S, { items: j.items, months, monthNames: j.monthNames || {}, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
 }
 
 async function load(silent) {
@@ -492,13 +501,15 @@ function bigNum(n) { const [v, u] = compact(n); return `${v}<small>${u}</small>`
 function renderHeader() {
   $('#meAv').outerHTML = avatar(S.user).replace('class="av"', 'class="av" id="meAv"');
   $('#meName').textContent = S.user || 'Chọn';
-  $('#sub').textContent = S.loading ? 'Đang tải…' : mLong(S.month);
+  $('#sub').textContent = S.loading ? 'Đang tải…' : S.monthNames[S.month] ? S.monthNames[S.month] + ' · ' + mLong(S.month) : mLong(S.month);
   $('#demoNote').hidden = !DEMO;
 
   const cur = ym(new Date());
   const set = new Set([...S.months, cur, addMonth(cur, 1), S.month]);
   const list = [...set].sort();
-  $('#months').innerHTML = list.map(m => `<button data-m="${m}" class="${m === S.month ? 'on' : ''}">${mLabel(m)}</button>`).join('');
+  $('#months').innerHTML = list.map(m => m === S.month
+    ? `<button data-m="${m}" class="on" aria-label="Đổi tên ${esc(mLabel(m))}">${esc(mLabel(m))}${ICON.edit}</button>`
+    : `<button data-m="${m}">${esc(mLabel(m))}</button>`).join('');
   const on = $('#months .on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
@@ -515,7 +526,7 @@ function monthCard(t) {
   const left = inc - t.active;
   const seg = (v, c) => v && t.all ? `<i style="width:${v / t.all * 100}%;background:${c}"></i>` : '';
   return `<div class="card c-blue">
-    <div class="ct"><span class="ic">${ICON.wallet}</span><h3>${mLong(S.month)}</h3>
+    <div class="ct"><span class="ic">${ICON.wallet}</span><h3>${esc(mTitle(S.month))}</h3>
       ${t.n.all ? `<span class="badge ${t.none ? 's-none' : 's-paid'}">${t.none ? t.n.none + ' khoản chờ' : '✓ Xong tháng'}</span>` : ''}</div>
     ${has ? `<div class="lbl">${left >= 0 ? 'Còn dư' : 'Chi vượt thu nhập'}</div>
       <div class="big ${left < 0 ? 'neg' : ''}">${left < 0 ? '−' : ''}${bigNum(Math.abs(left))}</div>
@@ -592,6 +603,24 @@ function itemSummary() {
   </div>`;
 }
 
+function openMonthName() {
+  const cur = S.monthNames[S.month] || '';
+  openSheet(`<h3>Đặt tên ${mLong(S.month).toLowerCase()}</h3>
+    <div class="field"><label>Tên tháng</label><input id="mnIn" maxlength="30" value="${esc(cur)}" placeholder="VD: Tháng cưới, Tết 2027"></div>
+    <div class="lbl" style="margin:-6px 0 14px">Bỏ trống để dùng tên mặc định "${mDefault(S.month)}".</div>
+    <div class="acts"><button class="btn ghost" id="mnCancel">Huỷ</button><button class="btn" id="mnSave">Lưu</button></div>`);
+  setTimeout(() => $('#mnIn').focus(), 250);
+  $('#mnCancel').onclick = closeSheet;
+  $('#mnSave').onclick = () => {
+    const name = $('#mnIn').value.trim();
+    closeSheet();
+    if (name === cur) return;
+    if (name) S.monthNames[S.month] = name; else delete S.monthNames[S.month];
+    render();
+    mutate('setMonthName', { name }, name ? 'Đã đổi tên tháng' : 'Đã bỏ tên riêng');
+  };
+}
+
 function openIncome() {
   const fromLast = !S.income.length && S.lastIncome.length > 0;
   const start = S.income.length ? S.income : fromLast ? S.lastIncome : CONFIG.USERS.map(u => ({ name: 'Lương ' + u.id, amount: 0 }));
@@ -629,7 +658,7 @@ function openIncome() {
 function renderItems() {
   const el = $('#tab-items');
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
-  el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${mLong(S.month)}</h2></div>${itemSummary()}
+  el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${esc(mTitle(S.month))}</h2></div>${itemSummary()}
     <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-goto="types">Loại chi</button></div>${itemList()}
     <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi nhanh</div>`;
 }
@@ -890,6 +919,7 @@ document.addEventListener('click', e => {
   if ((d.tab || d.goto) && (d.tab || d.goto) !== 'types' && !leaveTypes()) return;
   if (d.tab) { S.tab = d.tab; LS.set('ct_tab', d.tab); render(); scrollTo({ top: 0 }); }
   else if (d.goto) { if (sheetOpen) closeSheet(); S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
+  else if (d.m === S.month) openMonthName();
   else if (d.m) { S.month = d.m; S.items = []; S.income = []; S.lastIncome = []; load(); }
   else if (d.edit) openEdit(d.edit);
   else if (d.cycle) {

@@ -3,6 +3,7 @@
  * Tab "Items"  : các khoản chi theo tháng
  * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
+ * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới")
  *
  * Triển khai: Extensions → Apps Script → dán file này → Deploy → New deployment → Web app
  *   Execute as: Me · Who has access: Anyone
@@ -14,6 +15,7 @@
 const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due'];
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
 const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
+const MONTH_H = ['month', 'name', 'updatedAt', 'updatedBy'];
 
 // doGet/doPost chỉ chạy khi có request tới URL /exec. Bấm ▶ Run trong editor thì e = undefined.
 function doGet(e) {
@@ -31,8 +33,9 @@ function setup() {
   sheet_('Items', ITEM_H);
   sheet_('Income', INC_H);
   sheet_('Types', TYPE_H);
+  sheet_('Months', MONTH_H);
   const pin = PropertiesService.getScriptProperties().getProperty('PIN');
-  Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types. PIN đã đặt (' + pin.length + ' ký tự).'
+  Logger.log(pin ? '✅ Đã tạo tab Items/Income/Types/Months. PIN đã đặt (' + pin.length + ' ký tự).'
                  : '⚠️ Đã tạo tab, nhưng CHƯA đặt PIN: Project Settings → Script properties → thêm PIN.');
 }
 
@@ -54,6 +57,7 @@ function handle_(p) {
         case 'copyMonth': copy_(p.from, p.month, user); break;
         case 'setIncome': setIncome_(p.month, p.income || [], user); break;
         case 'setTypes': setTypes_(p.types || [], user); break;
+        case 'setMonthName': setMonthName_(p.month, p.name, user); break;
         default: return out_({ ok: false, error: 'Unknown action' });
       }
     } finally {
@@ -126,13 +130,16 @@ function clean_(o) {
 function list_(month) {
   const items = rows_(sheet_('Items', ITEM_H), ITEM_H);
   const inc = rows_(sheet_('Income', INC_H), INC_H);
-  const months = Array.from(new Set(items.map(r => String(r.month)).concat(inc.map(r => String(r.month))))).sort();
+  const monthNames = {};
+  rows_(sheet_('Months', MONTH_H), MONTH_H).forEach(r => { if (String(r.name)) monthNames[String(r.month)] = String(r.name); });
+  const months = Array.from(new Set(items.map(r => String(r.month)).concat(inc.map(r => String(r.month)), Object.keys(monthNames)))).sort();
   const incOf = m => inc.filter(r => String(r.month) === m).map(r => ({ name: String(r.name), amount: Number(r.amount) || 0 }));
   const prev = Array.from(new Set(inc.map(r => String(r.month)))).filter(m => m < month).sort().pop();
   const types = rows_(sheet_('Types', TYPE_H), TYPE_H).sort((a, b) => Number(a.order) - Number(b.order))
     .map(r => ({ name: String(r.name), amount: Number(r.amount) || 0, due: Number(r.due) || '' }));
   return {
     months: months,
+    monthNames: monthNames,
     types: types,
     income: incOf(month),
     lastIncome: prev ? incOf(prev) : [],
@@ -206,4 +213,15 @@ function setTypes_(list, user) {
   const now = new Date().toISOString();
   append_(s, list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' }))
     .filter(x => x.name).map((x, i) => [i + 1, x.name, x.amount, x.due, now, user]));
+}
+
+// Đặt tên riêng cho một tháng; tên rỗng = bỏ tên riêng (về "Tháng N")
+function setMonthName_(month, name, user) {
+  const s = sheet_('Months', MONTH_H);
+  const cur = rows_(s, MONTH_H).find(r => String(r.month) === month);
+  name = String(name || '').trim().slice(0, 30);
+  if (!name) { if (cur) s.deleteRow(cur._row); return; }
+  const row = [month, name, new Date().toISOString(), user];
+  if (cur) s.getRange(cur._row, 1, 1, MONTH_H.length).setNumberFormat('@').setValues([row]);
+  else append_(s, [row]);
 }
