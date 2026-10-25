@@ -156,6 +156,12 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-row .amt{flex:1;text-align:right;font-weight:600}
 .inc-row .x{width:36px;flex:none;color:var(--muted);font-size:22px;line-height:1}
 .inc-row .dd{width:58px;flex:none;text-align:center}
+.inc-row.dt input{padding:10px 12px;font-size:15px}
+.field input[readonly]{color:var(--muted);background:var(--gray-t)}
+.dts{margin-top:6px;display:grid;gap:3px;font-size:13px;color:var(--muted)}
+.dts div{display:flex;justify-content:space-between;gap:10px;padding-left:10px;border-left:2px solid var(--line)}
+.dts span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dts b{font-weight:500;white-space:nowrap}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
 .field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
 .field select{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 40px 13px 14px;font:inherit;font-size:16px;color:inherit;outline:none;appearance:none;-webkit-appearance:none;
@@ -404,7 +410,7 @@ function localApi(p) {
   const ts = () => new Date().toISOString();
   const bulk = items => {
     if (db.items.some(r => r.month === p.month)) throw new Error('Tháng này đã có dữ liệu');
-    items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', updatedAt: ts(), updatedBy: p.user }));
+    items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', details: (it.details || []).map(d => ({ ...d })), updatedAt: ts(), updatedBy: p.user }));
   };
   const setInc = list => {
     const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 })).filter(x => x.name);
@@ -460,7 +466,7 @@ function seedDemo() {
 
 // Chuẩn hoá dữ liệu từ server: trạng thái lạ → Chưa trả, chỉ nhận tháng dạng YYYY-MM
 function setData(j) {
-  j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; });
+  j.items.forEach(i => { if (!STATUS[i.status]) i.status = 'none'; if (!Array.isArray(i.details)) i.details = []; });
   const months = (j.months || []).filter(m => /^\d{4}-\d{2}$/.test(m));
   Object.assign(S, { items: j.items, months, monthNames: j.monthNames || {}, income: j.income || [], lastIncome: j.lastIncome || [], types: j.types || [] });
 }
@@ -582,7 +588,7 @@ function itemList() {
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
           <span class="no">${k + 1}</span>
-          <span style="min-width:0"><div class="nm">${esc(i.name)}</div><div class="amt">${vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div></span>
+          <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div><div class="amt">${vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<div><span>${esc(d.name)}</span><b>${vnd(d.amount)}</b></div>`).join('')}</div>` : ''}</span>
         </button>
         <button class="pill ${STATUS[i.status]?.cls || 's-none'}" data-cycle="${i.id}">${STATUS[i.status]?.label || 'Chưa trả'}</button>
       </div>`).join('')}
@@ -857,6 +863,11 @@ function renderTypes() {
   };
 }
 
+const dtRow = (x = {}) => `<div class="inc-row dt">
+    <input class="nm" value="${esc(x.name || '')}" placeholder="VD: Điện thoại" aria-label="Tên chi tiết">
+    <input class="amt" inputmode="numeric" value="${Number(x.amount) ? Number(x.amount).toLocaleString('vi-VN') : ''}" placeholder="0" aria-label="Số tiền">
+    <button type="button" class="x" aria-label="Xoá dòng">×</button></div>`;
+
 function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
   if (!it) return;
@@ -872,7 +883,11 @@ function openEdit(id) {
         <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
       </select>
       <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
-    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></div>
+    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0">
+      <span class="hint" id="fAmtHint" hidden>= tổng các dòng chi tiết bên dưới</span></div>
+    <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc)</span></label>
+      <div id="fDts">${(it.details || []).map(dtRow).join('')}</div>
+      <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button></div>
     <div class="field"><label>Hạn nộp</label><div class="row2"><input id="fDue" type="date" min="${ymd(1)}" max="${ymd(lastDay)}" value="${it.due ? ymd(Math.min(Number(it.due), lastDay)) : ''}"><button id="fDueClr" type="button">Bỏ hạn</button></div><span class="hint">Lặp lại ngày này khi sao chép sang tháng sau</span></div>
     <div class="field"><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
     <div class="field"><label>Ghi chú</label><textarea id="fNote" rows="2" placeholder="Không bắt buộc">${esc(it.note)}</textarea></div>
@@ -880,6 +895,21 @@ function openEdit(id) {
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
   const amt = $('#fAmt');
   amt.oninput = () => { const n = parseAmt(amt.value); amt.value = n ? n.toLocaleString('vi-VN') : ''; };
+  // Có chi tiết → số tiền của khoản = tổng chi tiết (khoá ô số tiền)
+  const dts = $('#fDts');
+  const readDts = () => [...dts.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value) }));
+  const syncAmt = () => {
+    const sum = readDts().reduce((s, x) => s + x.amount, 0), on = sum > 0;
+    amt.readOnly = on; $('#fAmtHint').hidden = !on;
+    if (on) amt.value = sum.toLocaleString('vi-VN');
+  };
+  dts.oninput = e => {
+    if (e.target.classList.contains('amt')) { const n = parseAmt(e.target.value); e.target.value = n ? n.toLocaleString('vi-VN') : ''; }
+    syncAmt();
+  };
+  dts.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); syncAmt(); } };
+  $('#fDtAdd').onclick = () => { dts.insertAdjacentHTML('beforeend', dtRow()); dts.lastElementChild.querySelector('.nm').focus(); };
+  syncAmt();
   $('#sheet').querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     st = b.dataset.st; $('#sheet').querySelectorAll('[data-st]').forEach(x => x.classList.toggle('on', x === b));
   });
@@ -889,7 +919,7 @@ function openEdit(id) {
     $('#fName').hidden = !other;
     if (other) return $('#fName').focus();
     const tp = types[v];
-    if (tp.amount) amt.value = Number(tp.amount).toLocaleString('vi-VN');
+    if (tp.amount && !amt.readOnly) amt.value = Number(tp.amount).toLocaleString('vi-VN');
     if (tp.due) $('#fDue').value = ymd(Math.min(Number(tp.due), lastDay));
   };
   $('#fDueClr').onclick = () => { $('#fDue').value = ''; };
@@ -905,7 +935,9 @@ function openEdit(id) {
     const name = tv === 'other' ? $('#fName').value.trim() : types[tv].name;
     if (!name) return toast('Nhập tên khoản', true);
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
-    const item = id ? { id, name, amount, status: st, note, due } : { month: S.month, name, amount, status: st, note, due };
+    const details = readDts().filter(x => x.name || x.amount);
+    if (details.some(x => !x.name)) return toast('Nhập tên cho dòng chi tiết', true);
+    const item = id ? { id, name, amount, status: st, note, due, details } : { month: S.month, name, amount, status: st, note, due, details };
     closeSheet();
     if (id) { Object.assign(it, item); render(); }
     mutate('save', { item }, id ? 'Đã lưu thay đổi' : 'Đã thêm khoản');

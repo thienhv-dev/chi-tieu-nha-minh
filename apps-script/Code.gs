@@ -1,6 +1,6 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
- * Tab "Items"  : các khoản chi theo tháng
+ * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount}])
  * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới")
@@ -12,7 +12,7 @@
  * Nhờ vậy file này push lên GitHub public cũng không lộ PIN.
  */
 
-const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due'];
+const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due', 'details'];
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
 const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
 const MONTH_H = ['month', 'name', 'updatedAt', 'updatedBy'];
@@ -124,7 +124,20 @@ function clean_(o) {
     amount: Number(o.amount) || 0, status: String(o.status || 'none'), note: String(o.note || ''),
     updatedAt: String(o.updatedAt || ''), updatedBy: String(o.updatedBy || ''),
     due: Number(o.due) || '', // hạn nộp: ngày trong tháng (1–31)
+    details: details_(o.details),
   };
+}
+
+// Chi tiết của một khoản: mảng [{name, amount}]; trong Sheet lưu dạng chuỗi JSON
+function details_(v) {
+  let a = v;
+  if (!Array.isArray(a)) { try { a = JSON.parse(v || '[]'); } catch (_) { a = []; } }
+  if (!Array.isArray(a)) return [];
+  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0 })).filter(x => x.name || x.amount);
+}
+
+function itemRow_(o) {
+  return ITEM_H.map(h => h === 'details' ? JSON.stringify(o.details || []) : o[h]);
 }
 
 function list_(month) {
@@ -154,14 +167,14 @@ function save_(item, user) {
   const cur = all.find(r => String(r.id) === String(item.id));
 
   if (cur) {
-    const next = Object.assign(clean_(cur), item, { updatedAt: now, updatedBy: user });
-    s.getRange(cur._row, 1, 1, ITEM_H.length).setNumberFormat('@').setValues([ITEM_H.map(h => String(next[h]))]);
+    const next = clean_(Object.assign({}, cur, item, { updatedAt: now, updatedBy: user }));
+    s.getRange(cur._row, 1, 1, ITEM_H.length).setNumberFormat('@').setValues([itemRow_(next).map(String)]);
   } else {
     const order = Math.max(0, ...all.filter(r => String(r.month) === item.month).map(r => Number(r.order) || 0)) + 1;
     const next = clean_(Object.assign({ order: order, status: 'none' }, item, {
       id: Utilities.getUuid().slice(0, 8), updatedAt: now, updatedBy: user,
     }));
-    append_(s, [ITEM_H.map(h => next[h])]);
+    append_(s, [itemRow_(next)]);
   }
 }
 
@@ -177,8 +190,8 @@ function bulk_(month, items, user) {
   const now = new Date().toISOString();
   append_(s, items.map((it, i) => {
     const o = clean_({ id: Utilities.getUuid().slice(0, 8), month: month, order: i + 1, name: it.name,
-      amount: it.amount, status: 'none', note: it.note || '', due: it.due, updatedAt: now, updatedBy: user });
-    return ITEM_H.map(h => o[h]);
+      amount: it.amount, status: 'none', note: it.note || '', due: it.due, details: it.details, updatedAt: now, updatedBy: user });
+    return itemRow_(o);
   }));
 }
 
