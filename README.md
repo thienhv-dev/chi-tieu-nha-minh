@@ -27,7 +27,7 @@ Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup`
 
 | Tab | Cột | Ý nghĩa |
 |---|---|---|
-| `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount, paid, note}]` |
+| `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount, paid, note, due}]` |
 | `Income` | month, name, amount, updatedAt, updatedBy, day | Các khoản thu theo tháng. `day`: ngày nhận (trống = tiền có sẵn) |
 | `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: dropdown khi thêm khoản + dùng cho "Tạo từ mẫu" |
 | `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") và tên danh sách riêng (khoá `c-xxxx`) |
@@ -69,7 +69,7 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 ## Dùng
 
 - Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
-- **Nhập tiền nhanh**: gõ `2tr5`, `500k`, `1.2tr`; hoặc dùng nút `000` / `+100k` / `+500k` / `+1tr` dưới ô số tiền.
+- **Nhập tiền nhanh**: gõ `2tr5`, `500k`, `1.2tr` (tự đổi thành số khi rời ô).
 - Chạm nút trạng thái để đổi nhanh → có **Hoàn tác** trong 5 giây nếu lỡ tay.
 - **Đổi tên tháng**: bấm ✏️ cạnh tên tháng (dưới tiêu đề app); bỏ trống để về "Tháng N". Chạm vào tháng chỉ để chuyển tháng.
 - **Danh sách riêng** (thanh dưới thanh tháng, nút *+ Danh sách*): danh sách không theo tháng, VD "Mặc định" làm ngân sách chuẩn
@@ -79,7 +79,7 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.
   Khi thêm khoản, chọn loại trong **dropdown** → tự điền tiền/hạn; khoản phát sinh chọn **Khác (tự nhập)**.
 - **Chi tiết trong khoản** (VD Vợ sinh hoạt 2,5tr → Điện thoại 500k, Máy tính góp 900k): số tiền của khoản là ngân sách,
-  mỗi dòng chi tiết đánh dấu đã trả riêng (trong màn sửa khoản, bấm ✓ rồi Lưu). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
+  mỗi dòng chi tiết có hạn nộp, ghi chú và đánh dấu đã trả riêng (trong màn sửa khoản, bấm ○ rồi Lưu). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
 - **Khoản chi**: bảng tóm tắt dự kiến chi / đã trả / thu nhập / dư-âm; chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
 - **Dòng tiền**: tiền vào (theo *ngày nhận* của khoản thu) và tiền ra (theo hạn nộp) xếp theo ngày, số dư sau mỗi mốc;

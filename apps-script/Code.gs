@@ -1,6 +1,6 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
- * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid, note}])
+ * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid, note, due}])
  * Tab "Income" : các khoản thu theo tháng (tên, số tiền, ngày nhận — trống = tiền có sẵn)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới"), và tên các danh sách riêng
@@ -77,7 +77,8 @@ function handle_(p) {
 // Sửa tay trong Sheet: app thấy sau tối đa 10 phút (hoặc chạy hàm setup để làm mới ngay).
 const CACHE_TTL = 600;
 function bump_() {
-  const v = String(Date.now());
+  // Thêm phần ngẫu nhiên: 2 lần ghi trong cùng 1 mili-giây vẫn ra phiên bản khác nhau
+  const v = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   CacheService.getScriptCache().put('ver', v, CACHE_TTL);
   return v;
 }
@@ -149,12 +150,12 @@ function clean_(o) {
   };
 }
 
-// Chi tiết của một khoản: mảng [{name, amount, paid, note}]; trong Sheet lưu dạng chuỗi JSON
+// Chi tiết của một khoản: mảng [{name, amount, paid, note, due}]; trong Sheet lưu dạng chuỗi JSON
 function details_(v) {
   let a = v;
   if (!Array.isArray(a)) { try { a = JSON.parse(v || '[]'); } catch (_) { a = []; } }
   if (!Array.isArray(a)) return [];
-  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0, paid: !!(x && x.paid), note: String((x && x.note) || '').trim() }))
+  return a.map(x => ({ name: String((x && x.name) || '').trim(), amount: Number(x && x.amount) || 0, paid: !!(x && x.paid), note: String((x && x.note) || '').trim(), due: Number(x && x.due) || '' }))
     .filter(x => x.name || x.amount);
 }
 
