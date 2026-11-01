@@ -191,13 +191,12 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .dtw.paid .nm{text-decoration:line-through;color:var(--muted)}
 .dtw .x{width:28px;height:28px;flex:none;border-radius:50%;color:var(--muted);font-size:20px;line-height:1}
 .dtw .x:active{background:var(--gray-t)}
-.dt-mid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px 36px}
+.dt-mid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 6px 36px}
 .field .dt-f{margin:0;font-size:11.5px}
 .dt-f span{display:block;margin-bottom:3px}
 .field .dt-f input{padding:8px 10px;font-size:14.5px;border-radius:10px;background:var(--card)}
 .field .dt-f .amt{text-align:right;font-weight:600}
-.field .dtw .dnote{width:calc(100% - 36px);margin-left:36px;border:0;background:transparent;padding:6px 0 4px;font-size:13.5px;color:var(--muted)}
-.field .dtw .dnote:focus{color:var(--ink)}
+.dt-f.wide{grid-column:1/-1}
 .row .dts .dn small{display:block;font-size:12px;color:var(--muted);opacity:.85;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .s-part{background:var(--blue-t);color:var(--blue)}
 .row{flex-wrap:wrap}
@@ -1154,8 +1153,8 @@ const dtRow = (x = {}, c) => `<div class="dtw ${x.paid ? 'paid' : ''}">
     <div class="dt-mid">
       <label class="dt-f"><span>Số tiền</span><input class="amt" inputmode="numeric" value="${Number(x.amount) ? Number(x.amount).toLocaleString('vi-VN') : ''}" placeholder="0"></label>
       <label class="dt-f"><span>Hạn nộp</span><input class="ddate" type="date" min="${c.ymd(1)}" max="${c.ymd(c.lastDay)}" value="${Number(x.due) ? c.ymd(Math.min(Number(x.due), c.lastDay)) : ''}"></label>
-    </div>
-    <input class="dnote" value="${esc(x.note || '')}" placeholder="+ Ghi chú" aria-label="Ghi chú chi tiết"></div>`;
+      <label class="dt-f wide"><span>Ghi chú</span><input class="dnote" value="${esc(x.note || '')}" placeholder="Không bắt buộc"></label>
+    </div></div>`;
 
 function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
