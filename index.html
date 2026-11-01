@@ -736,7 +736,7 @@ function monthCard(t) {
 // 3) Còn khoản nào chưa trả
 function dueCard(t) {
   // Có hạn nộp xếp trước (gần nhất lên đầu), còn lại theo số tiền
-  const due = S.items.filter(i => remainOf(i) > 0).sort((a, b) => (Number(a.due) || 99) - (Number(b.due) || 99) || remainOf(b) - remainOf(a)), show = due.slice(0, 5);
+  const due = S.items.filter(i => remainOf(i) > 0).sort((a, b) => (effDue(a) || 99) - (effDue(b) || 99) || remainOf(b) - remainOf(a)), show = due.slice(0, 5);
   return `<div class="card c-pink">
     <div class="ct"><span class="ic">${ICON.clock}</span><h3>Còn phải trả${due.length ? ` <small class="cnt">${due.length}</small>` : ''}</h3><button class="right" data-goto="items">Xem tất cả</button></div>
     ${due.length ? show.map(i => `<div class="due">
@@ -747,9 +747,16 @@ function dueCard(t) {
   </div>`;
 }
 
+// Hạn của khoản; khoản chưa đặt hạn mà còn chi tiết chưa trả có hạn → lấy hạn gần nhất của chi tiết
+function effDue(i) {
+  if (Number(i.due)) return Number(i.due);
+  const ds = (i.details || []).filter(d => !d.paid && Number(d.due)).map(d => Number(d.due));
+  return ds.length ? Math.min(...ds) : 0;
+}
+
 // Hạn nộp lưu dạng ngày trong tháng; quy ra ngày cụ thể của tháng đang xem
 function dueInfo(i) {
-  const d = Number(i.due); if (!d) return null;
+  const d = effDue(i); if (!d) return null;
   if (isBoard(S.month)) return { label: 'ngày ' + d, late: false, soon: false, left: 99 };
   const [y, m] = S.month.split('-').map(Number);
   const day = Math.min(d, new Date(y, m, 0).getDate());
