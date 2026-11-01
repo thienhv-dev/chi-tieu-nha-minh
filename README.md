@@ -30,7 +30,7 @@ Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup`
 | `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount, paid, note}]` |
 | `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
 | `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: dropdown khi thêm khoản + dùng cho "Tạo từ mẫu" |
-| `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") |
+| `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") và tên danh sách riêng (khoá `c-xxxx`) |
 
 > Không lưu lịch sử thay đổi (cho nhẹ). Sheet cũ còn tab `History` thì có thể xoá tay.
 
@@ -71,7 +71,10 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - Lần đầu chọn **Chồng/Vợ** và nhập PIN (lưu trên máy).
 - **Nhập tiền nhanh**: gõ `2tr5`, `500k`, `1.2tr`; hoặc dùng nút `000` / `+100k` / `+500k` / `+1tr` dưới ô số tiền.
 - Chạm nút trạng thái để đổi nhanh → có **Hoàn tác** trong 5 giây nếu lỡ tay.
-- **Đổi tên tháng**: chạm vào tháng đang chọn (có ✏️) → đặt tên riêng; bỏ trống để về "Tháng N".
+- **Đổi tên tháng**: bấm ✏️ cạnh tên tháng (dưới tiêu đề app); bỏ trống để về "Tháng N". Chạm vào tháng chỉ để chuyển tháng.
+- **Danh sách riêng** (thanh dưới thanh tháng, nút *+ Danh sách*): danh sách không theo tháng, VD "Mặc định" làm ngân sách chuẩn
+  → tháng mới trống có nút *Sao chép từ Mặc định*. Đổi tên / xoá danh sách bằng nút ✏️.
+- **Tháng đã qua bị khoá** (chỉ xem): bấm *Mở khoá để sửa* khi cần sửa.
 - **Tổng quan**: còn dư/thiếu của tháng, các khoản còn phải trả, thay đổi gần đây.
 - **Loại chi** (tab riêng ở thanh dưới): định nghĩa danh sách loại = tên + số tiền + hạn mặc định.
   Khi thêm khoản, chọn loại trong **dropdown** → tự điền tiền/hạn; khoản phát sinh chọn **Khác (tự nhập)**.

@@ -3,7 +3,8 @@
  * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid, note}])
  * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
- * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới")
+ * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới"), và tên các danh sách riêng
+ *                (khoá "c-xxxx", không theo tháng — VD "Mặc định"); khoản chi/thu của danh sách lưu như một tháng
  *
  * Triển khai: Extensions → Apps Script → dán file này → Deploy → New deployment → Web app
  *   Execute as: Me · Who has access: Anyone
@@ -59,6 +60,7 @@ function handle_(p) {
         case 'setIncome': setIncome_(p.month, p.income || [], user); break;
         case 'setTypes': setTypes_(p.types || [], user); break;
         case 'setMonthName': setMonthName_(p.month, p.name, user); break;
+        case 'deleteBoard': deleteBoard_(p.month); break;
         default: return out_({ ok: false, error: 'Unknown action' });
       }
       bump_(); // dữ liệu vừa đổi → bỏ bộ nhớ đệm cũ
@@ -258,4 +260,14 @@ function setMonthName_(month, name, user) {
   const row = [month, name, new Date().toISOString(), user];
   if (cur) s.getRange(cur._row, 1, 1, MONTH_H.length).setNumberFormat('@').setValues([row]);
   else append_(s, [row]);
+}
+
+// Xoá một danh sách riêng (khoá "c-..."): xoá khoản chi, thu nhập và tên của nó. Không áp dụng cho tháng thật.
+function deleteBoard_(month) {
+  if (!/^c-/.test(String(month))) throw new Error('Chỉ xoá được danh sách riêng');
+  [['Items', ITEM_H], ['Income', INC_H], ['Months', MONTH_H]].forEach(([name, h]) => {
+    const s = sheet_(name, h);
+    rows_(s, h).filter(r => String(r.month) === month).map(r => r._row)
+      .sort((a, b) => b - a).forEach(r => s.deleteRow(r));
+  });
 }
