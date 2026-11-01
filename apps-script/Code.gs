@@ -1,7 +1,7 @@
 /**
  * Backend cho app "Chi tiêu nhà mình" — chạy trên Google Apps Script, lưu vào chính Google Sheet.
  * Tab "Items"  : các khoản chi theo tháng (cột details = JSON các dòng chi tiết [{name, amount, paid, note}])
- * Tab "Income" : các khoản thu theo tháng (tên + số tiền)
+ * Tab "Income" : các khoản thu theo tháng (tên, số tiền, ngày nhận — trống = tiền có sẵn)
  * Tab "Types"  : loại khoản chi (tên, số tiền, hạn mặc định) — dropdown khi thêm khoản + "Tạo từ mẫu"
  * Tab "Months" : tên riêng đặt cho từng tháng (VD "Tháng cưới"), và tên các danh sách riêng
  *                (khoá "c-xxxx", không theo tháng — VD "Mặc định"); khoản chi/thu của danh sách lưu như một tháng
@@ -14,7 +14,7 @@
  */
 
 const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'updatedAt', 'updatedBy', 'due', 'details'];
-const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy'];
+const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy', 'day'];
 const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
 const MONTH_H = ['month', 'name', 'updatedAt', 'updatedBy'];
 
@@ -168,7 +168,7 @@ function list_(month) {
   const monthNames = {};
   rows_(sheet_('Months', MONTH_H), MONTH_H).forEach(r => { if (String(r.name)) monthNames[String(r.month)] = String(r.name); });
   const months = Array.from(new Set(items.map(r => String(r.month)).concat(inc.map(r => String(r.month)), Object.keys(monthNames)))).sort();
-  const incOf = m => inc.filter(r => String(r.month) === m).map(r => ({ name: String(r.name), amount: Number(r.amount) || 0 }));
+  const incOf = m => inc.filter(r => String(r.month) === m).map(r => ({ name: String(r.name), amount: Number(r.amount) || 0, day: Number(r.day) || '' }));
   const prev = Array.from(new Set(inc.map(r => String(r.month)))).filter(m => m < month).sort().pop();
   const types = rows_(sheet_('Types', TYPE_H), TYPE_H).sort((a, b) => Number(a.order) - Number(b.order))
     .map(r => ({ name: String(r.name), amount: Number(r.amount) || 0, due: Number(r.due) || '' }));
@@ -237,8 +237,8 @@ function setIncome_(month, list, user) {
   const now = new Date().toISOString();
   rows_(s, INC_H).filter(r => String(r.month) === month).map(r => r._row)
     .sort((a, b) => b - a).forEach(r => s.deleteRow(r));
-  append_(s, list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 }))
-    .filter(x => x.name).map(x => [month, x.name, x.amount, now, user]));
+  append_(s, list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, day: Number(x.day) || '' }))
+    .filter(x => x.name).map(x => [month, x.name, x.amount, now, user, x.day]));
 }
 
 // Thay toàn bộ danh sách loại khoản chi (không theo tháng)

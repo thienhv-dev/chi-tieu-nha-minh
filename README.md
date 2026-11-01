@@ -28,7 +28,7 @@ Script tự tạo 4 tab ở lần gọi đầu tiên (hoặc chọn hàm `setup`
 | Tab | Cột | Ý nghĩa |
 |---|---|---|
 | `Items` | id, month, order, name, amount, status, note, updatedAt, updatedBy, due, details | Khoản chi theo tháng. `status`: `none` / `paid` / `skip`. `due`: hạn nộp (ngày trong tháng). `details`: JSON các dòng chi tiết `[{name, amount, paid, note}]` |
-| `Income` | month, name, amount, updatedAt, updatedBy | Các khoản thu theo tháng |
+| `Income` | month, name, amount, updatedAt, updatedBy, day | Các khoản thu theo tháng. `day`: ngày nhận (trống = tiền có sẵn) |
 | `Types` | order, name, amount, due, updatedAt, updatedBy | Loại khoản chi: dropdown khi thêm khoản + dùng cho "Tạo từ mẫu" |
 | `Months` | month, name, updatedAt, updatedBy | Tên riêng của tháng (VD "Tháng cưới") và tên danh sách riêng (khoá `c-xxxx`) |
 
@@ -82,7 +82,9 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
   mỗi dòng chi tiết đánh dấu đã trả riêng (trong màn sửa khoản, bấm ✓ rồi Lưu). Có dòng đã trả → khoản thành **Đang trả**, hiện số còn lại.
 - **Khoản chi**: bảng tóm tắt dự kiến chi / đã trả / thu nhập / dư-âm; chạm nút trạng thái để đổi nhanh *Chưa trả → Đã trả → Hoãn*; chạm tên để sửa số tiền, **hạn nộp**, ghi chú, xoá.
 - **Thu nhập**: nhập nhiều khoản thu (tên + tiền); tháng mới tự gợi ý từ tháng trước.
-- **Dòng tiền**: tiền đang có, lịch trả theo hạn, phần tiền **để không ≥ 14 ngày** (có thể đầu tư tạm).
+- **Dòng tiền**: tiền vào (theo *ngày nhận* của khoản thu) và tiền ra (theo hạn nộp) xếp theo ngày, số dư sau mỗi mốc;
+  phần tiền **để không ≥ 14 ngày** tính từ ngày nhận tới ngày phải trả (có thể đầu tư tạm); báo rõ ngày nào thiếu tiền.
+  Thêm khoản thu "Số dư đầu tháng" (để trống ngày) để tính cả tiền đang có trong tài khoản.
 - Tháng mới trống: **Sao chép từ tháng trước** (giữ hạn nộp + thu nhập, trạng thái reset) hoặc **Tạo từ mẫu** (theo danh sách loại).
 - **Nhanh dù Apps Script chậm**: dữ liệu lưu sẵn trên máy (mở app là thấy ngay), mọi thao tác hiện ngay và được lưu ở nền
   theo thứ tự (chấm *Đang lưu… / ✓ Đã lưu / ⚠ Chưa lưu được / Ngoại tuyến* cạnh tên tháng; thay đổi chờ lưu được giữ cả khi tắt app).

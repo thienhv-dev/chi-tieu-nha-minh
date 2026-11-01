@@ -163,6 +163,8 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .idle-tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--green-t);color:var(--green);margin-top:4px}
 .short-tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--pink-t);color:var(--pink);margin-top:4px}
 .tl-row .x .short{color:var(--pink);white-space:normal}
+.tl-row.in .x b{color:var(--green)}
+.short-box{background:var(--pink-t);color:var(--pink);border-radius:12px;padding:9px 12px;font-size:13.5px;font-weight:500;margin-bottom:10px}
 .lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--muted)}
 .lg span{display:inline-flex;align-items:center;gap:6px}
 .lg i{width:9px;height:9px;border-radius:50%}
@@ -469,7 +471,7 @@ function localApi(p) {
     items.forEach((it, i) => db.items.push({ id: Math.random().toString(36).slice(2, 10), month: p.month, order: i + 1, name: it.name, amount: Number(it.amount) || 0, status: 'none', note: it.note || '', due: it.due || '', details: (it.details || []).map(d => ({ ...d, paid: false })), updatedAt: ts(), updatedBy: p.user }));
   };
   const setInc = list => {
-    const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0 })).filter(x => x.name);
+    const next = list.map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, day: Number(x.day) || '' })).filter(x => x.name);
     db.income = db.income.filter(r => r.month !== p.month).concat(next.map(x => ({ month: p.month, ...x, updatedAt: ts(), updatedBy: p.user })));
   };
   if (p.action === 'save') {
@@ -502,7 +504,7 @@ function localApi(p) {
     db.types = (p.types || []).map(x => ({ name: String(x.name || '').trim(), amount: Number(x.amount) || 0, due: Number(x.due) || '' })).filter(x => x.name);
   }
   LS.set('ct_demo_db', db);
-  const incOf = m => db.income.filter(r => r.month === m).map(r => ({ name: r.name, amount: r.amount }));
+  const incOf = m => db.income.filter(r => r.month === m).map(r => ({ name: r.name, amount: r.amount, day: r.day || '' }));
   const prev = [...new Set(db.income.map(r => r.month))].filter(m => m < p.month).sort().pop();
   return {
     ok: true,
@@ -782,7 +784,7 @@ function itemSummary() {
     <div class="kv sub"><span><i style="background:var(--muted)"></i>Còn phải trả</span><b>${vnd(t.none)}</b></div>
     ${t.skip ? `<div class="kv sub"><span><i style="background:var(--orange)"></i>Hoãn (không tính)</span><b>${vnd(t.skip)}</b></div>` : ''}
     <button class="kv" data-income><span>Thu nhập ${ICON.edit}</span><b>${S.income.length ? vnd(inc) : '<em>Nhập thu nhập</em>'}</b></button>
-    ${S.income.filter(x => Number(x.amount)).map(x => `<div class="kv sub"><span><i style="background:var(--teal)"></i>${esc(x.name)}</span><b>${vnd(x.amount)}</b></div>`).join('')}
+    ${S.income.filter(x => Number(x.amount)).map(x => `<div class="kv sub"><span><i style="background:var(--teal)"></i>${esc(x.name)}${Number(x.day) ? ` · ngày ${x.day}` : ''}</span><b>${vnd(x.amount)}</b></div>`).join('')}
     ${S.income.length ? `<div class="kv total ${left < 0 ? 'neg' : 'pos'}"><span>${left < 0 ? 'Âm (chi vượt thu)' : 'Còn dư'}</span><b>${left < 0 ? '−' : ''}${vnd(Math.abs(left))}</b></div>` : ''}
   </div>`;
 }
@@ -842,18 +844,22 @@ function openIncome() {
   const row = (x = {}) => `<div class="inc-row">
       <input class="nm" value="${esc(x.name || '')}" placeholder="Tên (VD: Thưởng)" aria-label="Tên khoản thu">
       <input class="amt" inputmode="numeric" value="${fmt(x.amount)}" placeholder="0" aria-label="Số tiền">
+      <input class="dd" inputmode="numeric" maxlength="2" value="${Number(x.day) || ''}" placeholder="—" aria-label="Ngày nhận (trong tháng), trống = có sẵn">
       <button class="x" aria-label="Xoá dòng">×</button></div>`;
   openSheet(`<h3>Thu nhập ${mLong(S.month).toLowerCase()}</h3>
+    <div class="lbl" style="margin:-6px 0 12px">Ngày = ngày nhận tiền trong tháng (VD lương ngày 10). Để trống nếu tiền đã có sẵn, VD "Số dư đầu tháng".</div>
+    <div class="tp-head"><span>Tên</span><span>Số tiền</span><span>Ngày</span></div>
     ${fromLast ? '<div class="lbl" style="margin:-6px 0 12px">Đã điền sẵn từ tháng trước, sửa nếu khác.</div>' : ''}
     <div id="incs">${start.map(row).join('')}</div>
     <button class="addrow" id="incAdd">+ Thêm khoản thu</button>
     <div class="inc-sum"><span>Tổng thu</span><b id="incSum"></b></div>
     <div class="acts"><button class="btn ghost" id="incCancel">Huỷ</button><button class="btn" id="incSave">Lưu</button></div>`);
   const box = $('#incs');
-  const read = () => [...box.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value) }));
+  const read = () => [...box.querySelectorAll('.inc-row')].map(r => ({ name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), day: Math.min(31, parseAmt(r.querySelector('.dd').value)) || '' }));
   const sum = () => { $('#incSum').textContent = vnd(read().reduce((s, x) => s + x.amount, 0)); };
   box.oninput = e => {
     if (e.target.classList.contains('amt')) fmtAmt(e.target);
+    if (e.target.classList.contains('dd')) { const n = Math.min(31, parseAmt(e.target.value)); e.target.value = n || ''; }
     sum();
   };
   box.onclick = e => { const x = e.target.closest('.x'); if (x) { x.parentElement.remove(); sum(); } };
@@ -878,37 +884,60 @@ function renderItems() {
 }
 
 /* ============ dòng tiền ============
- * Tiền đang có = Thu − Đã trả. Trừ dần các khoản Chưa trả theo hạn nộp để biết
- * mỗi phần tiền được để không bao lâu (có thể đầu tư tạm, VD mua vàng vài tuần).
+ * Dòng thời gian tiền VÀO (khoản thu theo "ngày nhận") và tiền RA (khoản chi theo hạn nộp).
+ * Khoản thu không có ngày nhận = tiền có sẵn (VD "Số dư đầu tháng").
+ * Tiền để không tính theo "tiền về trước dùng trước": mỗi phần tiền rảnh từ ngày nhận tới ngày phải trả.
  */
 const IDLE_MIN_DAYS = 14;
 function cashPlan() {
-  const t = totals(), inc = S.income.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  const t = totals();
   const [y, m] = S.month.split('-').map(Number), last = new Date(y, m, 0).getDate();
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const dateOf = i => Number(i.due) ? new Date(y, m - 1, Math.min(Number(i.due), last)) : null;
-  const days = d => Math.round((d - today) / 864e5);
-  const sum = a => a.reduce((s, i) => s + remainOf(i), 0);
-  const open = S.items.filter(i => remainOf(i) > 0);
-  const now = open.filter(i => { const d = dateOf(i); return !d || d <= today; });
-  const groups = [];
-  open.filter(i => { const d = dateOf(i); return d && d > today; }).sort((a, b) => dateOf(a) - dateOf(b)).forEach(i => {
-    const d = dateOf(i); let g = groups.find(x => +x.date === +d);
-    if (!g) groups.push(g = { date: d, items: [] });
-    g.items.push(i);
-  });
-  const have = inc - t.paid;
-  let cash = have - sum(now);
-  const afterNow = cash;
-  const steps = groups.map(g => {
-    const amt = sum(g.items), idle = Math.max(0, Math.min(amt, cash));
-    cash -= amt;
-    return { ...g, amt, idle, days: days(g.date), after: cash };
-  });
-  // Khoản dư nằm yên tới hạn sớm nhất của tháng sau
+  const first = new Date(y, m - 1, 1), base = today > first ? today : first; // mốc "bây giờ" của tháng đang xem
+  const dayOf = d => new Date(y, m - 1, Math.min(Number(d), last));
+  const at = d => Number(d) && dayOf(d) > base ? dayOf(d) : base;              // chưa tới ngày → ngày đó; đã qua / không có → bây giờ
+  const diff = (a, b) => Math.round((b - a) / 864e5);
+
+  const ins = S.income.filter(x => Number(x.amount) > 0)
+    .map(x => ({ type: 'in', date: at(x.day), amt: Number(x.amount), name: x.name, later: +at(x.day) > +base }));
+  // Khoản chưa đặt hạn: không gấp → trả khi đã nhận đủ tiền trong tháng (ngày nhận cuối cùng)
+  const firstIn = ins.length ? new Date(Math.min(...ins.map(x => +x.date))) : base;
+  const lastIn = ins.length ? new Date(Math.max(...ins.map(x => +x.date))) : base;
+  const outs = S.items.filter(i => remainOf(i) > 0).map(i => ({ type: 'out', date: Number(i.due) ? at(i.due) : lastIn, amt: remainOf(i), name: i.name + (Number(i.due) ? '' : ' (chưa đặt hạn)') }));
+  // Khoản đã trả: trừ vào tiền của tháng lúc có tiền đầu tiên (không làm âm số dư trước ngày nhận lương)
+  if (t.paid) outs.push({ type: 'out', date: firstIn, amt: t.paid, name: 'Đã trả', paid: true });
+  // Cùng ngày: tiền vào trước, rồi khoản đã trả, rồi các khoản chi
+  const rank = e => e.type === 'in' ? 0 : e.paid ? 1 : 2;
+  const ev = [...ins, ...outs].sort((a, b) => a.date - b.date || rank(a) - rank(b));
+
+  const lots = [], segs = [], rows = [];
+  let bal = 0;
+  for (const e of ev) {
+    if (e.type === 'in') { lots.push({ date: e.date, left: e.amt }); bal += e.amt; rows.push({ ...e, bal }); continue; }
+    let need = e.amt;
+    const mine = [];
+    while (need > 0 && lots.length) {
+      const L = lots[0], use = Math.min(L.left, need);
+      if (!e.paid) mine.push({ amt: use, from: L.date, to: e.date, days: diff(L.date, e.date), why: e.name });
+      L.left -= use; need -= use;
+      if (L.left <= 0) lots.shift();
+    }
+    // Khoản không đủ tiền: phần đang giữ cho nó không phải tiền rảnh để đầu tư
+    mine.forEach(x => segs.push({ ...x, short: need }));
+    bal -= e.amt;
+    if (!e.paid) rows.push({ ...e, bal, short: need });
+  }
+  // Tiền còn lại cuối tháng: rảnh tới hạn sớm nhất của tháng sau
   const dues = S.items.map(i => Number(i.due)).filter(Boolean);
   const nextDate = new Date(y, m, dues.length ? Math.min(...dues) : 1);
-  return { inc, paid: t.paid, have, now, nowAmt: sum(now), afterNow, steps, surplus: cash, nextDate, nextDays: days(nextDate) };
+  lots.forEach(L => { if (L.left > 0) segs.push({ amt: L.left, from: L.date, to: nextDate, days: diff(L.date, L.date > nextDate ? L.date : nextDate), why: 'Dư cuối tháng, giữ tới khoản đầu tháng sau', surplus: true }); });
+
+  const sum = (a, f) => a.filter(f).reduce((s, x) => s + x.amt, 0);
+  return {
+    base, isToday: +base === +today, rows, segs, end: bal, paidNow: +firstIn === +base,
+    inc: sum(ins, () => true), incNow: sum(ins, x => !x.later), incLater: sum(ins, x => x.later), later: ins.filter(x => x.later),
+    paid: t.paid, toPay: sum(outs, x => !x.paid), shorts: rows.filter(r => r.short > 0),
+  };
 }
 
 function renderCash() {
@@ -928,46 +957,42 @@ function renderCash() {
   }
   const p = cashPlan();
   const dm = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
-  const names = a => a.map(i => i.name).join(', ');
+  const when = d => +d === +p.base ? (p.isToday ? 'Hôm nay' : 'Đầu tháng') : dm(d);
   const money = n => n < 0 ? `<span class="neg-t">−${cstr(-n)}</span>` : cstr(n);
   const tag = d => d >= IDLE_MIN_DAYS ? `<span class="idle-tag">Rảnh ${d} ngày</span>` : `<span class="lbl">rảnh ${d} ngày</span>`;
-
-  // Các phần tiền để không: phần dành cho từng mốc hạn + phần dư cuối tháng
-  // short > 0: tiền đang có không đủ cho mốc này → không tính là tiền rảnh để đầu tư
-  const idle = p.steps.filter(s => s.idle > 0 && s.days > 0).map(s => ({ amt: s.idle, need: s.amt, short: s.amt - s.idle, days: s.days, until: s.date, why: names(s.items) }));
-  if (p.surplus > 0 && p.nextDays > 0) idle.push({ amt: p.surplus, short: 0, days: p.nextDays, until: p.nextDate, why: 'Tiền dư, giữ tới khoản đầu tháng sau' });
-  const longIdle = idle.filter(x => x.days >= IDLE_MIN_DAYS && !x.short).reduce((s, x) => s + x.amt, 0);
+  // Khoản đã trả chỉ trừ vào "đang có" khi tiền của tháng đã về; trước đó coi như trả bằng tiền cũ
+  const now = p.incNow - (p.paidNow ? p.paid : 0);
+  const idle = p.segs.filter(s => s.days > 0).sort((a, b) => b.days - a.days);
+  const longIdle = idle.filter(s => s.days >= IDLE_MIN_DAYS && !s.short).reduce((s, x) => s + x.amt, 0);
+  const noDay = S.income.some(x => Number(x.amount) > 0 && !Number(x.day));
 
   el.innerHTML = `<div class="grid">
     <div class="card c-green">
-      <div class="ct"><span class="ic">${ICON.coin}</span><h3>Tiền đang có</h3></div>
-      <div class="big ${p.have < 0 ? 'neg' : ''}">${p.have < 0 ? '−' : ''}${bigNum(Math.abs(p.have))}</div>
-      <div class="kv"><span>Tổng thu</span><b>${vnd(p.inc)}</b></div>
+      <div class="ct"><span class="ic">${ICON.coin}</span><h3>Tiền đang có</h3><button class="right" data-income>Sửa thu nhập</button></div>
+      <div class="big ${now < 0 ? 'neg' : ''}">${now < 0 ? '−' : ''}${bigNum(Math.abs(now))}</div>
+      <div class="kv"><span>Đã nhận / có sẵn</span><b>${vnd(p.incNow)}</b></div>
       <div class="kv"><span>Đã trả</span><b>− ${vnd(p.paid)}</b></div>
-      <div class="kv"><span>Cần trả ngay (tới hạn / chưa đặt hạn)</span><b>− ${vnd(p.nowAmt)}</b></div>
-      <div class="kv"><span>Trả sau theo hạn</span><b>− ${vnd(p.steps.reduce((s, x) => s + x.amt, 0))}</b></div>
-      <div class="kv total"><span>${p.surplus < 0 ? 'Thiếu sau khi trả hết' : 'Dư sau khi trả hết'}</span><b class="${p.surplus < 0 ? 'neg-t' : ''}">${p.surplus < 0 ? '−' : ''}${vnd(Math.abs(p.surplus))}</b></div>
+      ${p.incLater ? `<div class="kv"><span>Sắp nhận (${p.later.map(x => `${esc(x.name)} ${dm(x.date)}`).join(', ')})</span><b>+ ${vnd(p.incLater)}</b></div>` : ''}
+      <div class="kv"><span>Còn phải trả</span><b>− ${vnd(p.toPay)}</b></div>
+      <div class="kv total"><span>${p.end < 0 ? 'Thiếu cuối tháng' : 'Dư cuối tháng'}</span><b class="${p.end < 0 ? 'neg-t' : ''}">${p.end < 0 ? '−' : ''}${vnd(Math.abs(p.end))}</b></div>
+      ${!noDay && !p.incNow ? '<div class="lbl" style="margin-top:8px">Mẹo: thêm khoản thu "Số dư đầu tháng" (để trống ngày nhận) để tính cả tiền đang có trong tài khoản.</div>' : ''}
     </div>
 
     <div class="card c-teal">
       <div class="ct"><span class="ic">${ICON.clock}</span><h3>Tiền để không</h3></div>
-      ${idle.length ? `<div class="lbl" style="margin-bottom:10px">${longIdle ? `<b style="color:var(--green)">${cstr(longIdle)}</b> để không từ ${IDLE_MIN_DAYS} ngày trở lên, có thể đầu tư ngắn hạn` : `Chưa có khoản nào để không đủ ${IDLE_MIN_DAYS} ngày`}</div>
-      ${idle.sort((a, b) => b.days - a.days).map(x => `<div class="tl-row">
-        <div class="x"><b>${vnd(x.amt)}</b><span>${esc(x.why)}</span>
-          ${x.short ? `<span class="short">Đang có ${vnd(x.amt)} · cần ${vnd(x.need)} · thiếu ${vnd(x.short)}</span>` : ''}</div>
-        <div class="v">cần lại ${dm(x.until)}<br>${x.short ? '<span class="short-tag">Chưa đủ tiền</span>' : tag(x.days)}</div></div>`).join('')}`
-      : '<div class="lbl">Không có tiền để không — tiền đang có vừa đủ (hoặc thiếu) cho các khoản sắp tới.</div>'}
+      ${p.shorts.map(r => `<div class="short-box">⚠ Ngày ${dm(r.date)} thiếu <b>${vnd(r.short)}</b> cho ${esc(r.name)}</div>`).join('')}
+      ${idle.length ? `<div class="lbl" style="margin-bottom:10px">${longIdle ? `<b style="color:var(--green)">${vnd(longIdle)}</b> để không từ ${IDLE_MIN_DAYS} ngày trở lên, có thể đầu tư ngắn hạn` : `Chưa có khoản nào để không đủ ${IDLE_MIN_DAYS} ngày`}</div>
+      ${idle.map(s => `<div class="tl-row">
+        <div class="x"><b>${vnd(s.amt)}</b><span>${esc(s.why)}</span></div>
+        <div class="v">${when(s.from)} → ${dm(s.to)}<br>${s.short ? '<span class="short-tag">Chưa đủ tiền</span>' : tag(s.days)}</div></div>`).join('')}`
+      : '<div class="lbl">Không có tiền để không: tiền về là phải trả ngay.</div>'}
     </div>
 
     <div class="card">
-      <div class="ct"><span class="ic" style="background:var(--gray-t);color:var(--muted)">${ICON.wallet}</span><h3>Lịch trả</h3><span class="right">còn lại sau mỗi mốc</span></div>
-      ${p.nowAmt ? `<div class="tl-row"><div class="d">Ngay<small>tới hạn</small></div>
-        <div class="x"><b>${vnd(p.nowAmt)}</b><span>${esc(names(p.now))}</span></div>
-        <div class="v"><b>${money(p.afterNow)}</b>còn lại</div></div>` : ''}
-      ${p.steps.map(s => `<div class="tl-row"><div class="d">${dm(s.date)}<small>${s.days} ngày nữa</small></div>
-        <div class="x"><b>${vnd(s.amt)}</b><span>${esc(names(s.items))}</span></div>
-        <div class="v"><b>${money(s.after)}</b>còn lại</div></div>`).join('')}
-      ${!p.nowAmt && !p.steps.length ? '<div class="lbl">✓ Không còn khoản nào phải trả tháng này</div>' : ''}
+      <div class="ct"><span class="ic" style="background:var(--gray-t);color:var(--muted)">${ICON.wallet}</span><h3>Tiền vào / ra</h3><span class="right">số dư sau mỗi mốc</span></div>
+      ${p.rows.map(r => `<div class="tl-row ${r.type}"><div class="d">${when(r.date)}${+r.date !== +p.base ? `<small>${Math.round((r.date - p.base) / 864e5)} ngày nữa</small>` : ''}</div>
+        <div class="x"><b>${r.type === 'in' ? '+ ' : '− '}${vnd(r.amt)}</b><span>${esc(r.name)}</span></div>
+        <div class="v"><b>${money(r.bal)}</b>${r.short ? '<span class="neg-t">thiếu</span>' : 'còn lại'}</div></div>`).join('')}
     </div>
   </div>`;
 }
