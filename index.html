@@ -161,6 +161,8 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .tl-row .v b{display:block;font-size:15px;color:var(--ink)}
 .neg-t,.tl-row .v b.neg-t{color:var(--pink)}
 .idle-tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--green-t);color:var(--green);margin-top:4px}
+.short-tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--pink-t);color:var(--pink);margin-top:4px}
+.tl-row .x .short{color:var(--pink);white-space:normal}
 .lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--muted)}
 .lg span{display:inline-flex;align-items:center;gap:6px}
 .lg i{width:9px;height:9px;border-radius:50%}
@@ -404,7 +406,8 @@ function compact(n) {
   if (Math.abs(n) >= 1e3) return [trim(n / 1e3), 'k'];
   return [String(n), 'đ'];
 }
-function trim(x) { return (Math.round(x * 10) / 10).toLocaleString('vi-VN'); }
+// Giữ 2 chữ số lẻ để số rút gọn không lệch nhiều (1.350.000 → "1,35 tr" chứ không phải "1,4 tr")
+function trim(x) { return (Math.round(x * 100) / 100).toLocaleString('vi-VN'); }
 const cstr = n => compact(n).join(' ');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = s => document.querySelector(s);
@@ -930,9 +933,10 @@ function renderCash() {
   const tag = d => d >= IDLE_MIN_DAYS ? `<span class="idle-tag">Rảnh ${d} ngày</span>` : `<span class="lbl">rảnh ${d} ngày</span>`;
 
   // Các phần tiền để không: phần dành cho từng mốc hạn + phần dư cuối tháng
-  const idle = p.steps.filter(s => s.idle > 0 && s.days > 0).map(s => ({ amt: s.idle, days: s.days, until: s.date, why: names(s.items) }));
-  if (p.surplus > 0 && p.nextDays > 0) idle.push({ amt: p.surplus, days: p.nextDays, until: p.nextDate, why: 'Tiền dư, giữ tới khoản đầu tháng sau' });
-  const longIdle = idle.filter(x => x.days >= IDLE_MIN_DAYS).reduce((s, x) => s + x.amt, 0);
+  // short > 0: tiền đang có không đủ cho mốc này → không tính là tiền rảnh để đầu tư
+  const idle = p.steps.filter(s => s.idle > 0 && s.days > 0).map(s => ({ amt: s.idle, need: s.amt, short: s.amt - s.idle, days: s.days, until: s.date, why: names(s.items) }));
+  if (p.surplus > 0 && p.nextDays > 0) idle.push({ amt: p.surplus, short: 0, days: p.nextDays, until: p.nextDate, why: 'Tiền dư, giữ tới khoản đầu tháng sau' });
+  const longIdle = idle.filter(x => x.days >= IDLE_MIN_DAYS && !x.short).reduce((s, x) => s + x.amt, 0);
 
   el.innerHTML = `<div class="grid">
     <div class="card c-green">
@@ -949,8 +953,9 @@ function renderCash() {
       <div class="ct"><span class="ic">${ICON.clock}</span><h3>Tiền để không</h3></div>
       ${idle.length ? `<div class="lbl" style="margin-bottom:10px">${longIdle ? `<b style="color:var(--green)">${cstr(longIdle)}</b> để không từ ${IDLE_MIN_DAYS} ngày trở lên, có thể đầu tư ngắn hạn` : `Chưa có khoản nào để không đủ ${IDLE_MIN_DAYS} ngày`}</div>
       ${idle.sort((a, b) => b.days - a.days).map(x => `<div class="tl-row">
-        <div class="x"><b>${cstr(x.amt)}</b><span>${esc(x.why)}</span></div>
-        <div class="v">cần lại ${dm(x.until)}<br>${tag(x.days)}</div></div>`).join('')}`
+        <div class="x"><b>${vnd(x.amt)}</b><span>${esc(x.why)}</span>
+          ${x.short ? `<span class="short">Đang có ${vnd(x.amt)} · cần ${vnd(x.need)} · thiếu ${vnd(x.short)}</span>` : ''}</div>
+        <div class="v">cần lại ${dm(x.until)}<br>${x.short ? '<span class="short-tag">Chưa đủ tiền</span>' : tag(x.days)}</div></div>`).join('')}`
       : '<div class="lbl">Không có tiền để không — tiền đang có vừa đủ (hoặc thiếu) cho các khoản sắp tới.</div>'}
     </div>
 
