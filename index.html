@@ -792,9 +792,8 @@ function itemList() {
   return `<div class="list">
     ${S.items.map((i, k) => {
       const part = i.status === 'none' && dtPaid(i) > 0, s = stOf(i), ds = i.details || [], total = amtOf(i);
-      const nPaid = ds.filter(d => d.paid).length, iDue = effDue(i);
-      // Chi tiết cùng hạn với khoản thì không lặp lại nhãn hạn, chỉ hiện hạn khác
-      const dDue = d => !d.paid && Number(d.due) && Number(d.due) !== iDue;
+      const nPaid = ds.filter(d => d.paid).length;
+      const dDue = d => !d.paid && Number(d.due);
       return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
