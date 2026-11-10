@@ -216,7 +216,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row .dts button:first-child{border-top:0}
 .row .dts .paid{color:var(--muted)}
 .row .dts .paid b{text-decoration:line-through}
-.dprog{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.dprog{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);white-space:normal}
 .dbar{display:block;flex:1;height:4px;border-radius:4px;background:var(--gray-t);overflow:hidden;max-width:160px}
 .dbar i{display:block;height:100%;background:var(--green);border-radius:4px}
 .row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
@@ -677,12 +677,13 @@ function dtName(i, d) {
 // Khoản có chi tiết: số tiền = tổng chi tiết (số nhập tay chỉ dùng khi chưa có chi tiết nào có số tiền)
 const dtSum = i => (i.details || []).reduce((s, d) => s + (Number(d.amount) || 0), 0);
 const amtOf = i => dtSum(i) || Number(i.amount) || 0;
-// Khoản "Chưa trả" có chi tiết đã trả → đã trả một phần; còn lại = số tiền − phần đã trả
+// Có chi tiết: tính thực chi theo dấu tích từng dòng, kể cả dữ liệu cũ có trạng thái cha "paid".
 const dtPaid = i => (i.details || []).reduce((s, d) => s + (d.paid ? Number(d.amount) || 0 : 0), 0);
-const remainOf = i => i.status === 'none' ? Math.max(0, amtOf(i) - dtPaid(i)) : 0;
-// Nhãn trạng thái hiển thị: thêm "Đang trả" cho khoản đã trả một phần
+const hasDetails = i => dtSum(i) > 0;
+const remainOf = i => i.status === 'skip' ? 0 : hasDetails(i) ? Math.max(0, amtOf(i) - dtPaid(i)) : i.status === 'none' ? amtOf(i) : 0;
+// Trạng thái cha không được che phần chi tiết chưa chi.
 function stOf(i) {
-  if (i.status === 'none' && dtPaid(i) > 0) return remainOf(i) ? { label: 'Đang trả', cls: 's-part' } : STATUS.paid;
+  if (i.status !== 'skip' && hasDetails(i)) return remainOf(i) ? (dtPaid(i) > 0 ? { label: 'Đang chi', cls: 's-part' } : STATUS.none) : STATUS.paid;
   return STATUS[i.status] || STATUS.none;
 }
 
@@ -691,7 +692,7 @@ function totals() {
   S.items.forEach(i => {
     const a = amtOf(i);
     t.all += a; t.n.all++;
-    if (i.status === 'none') {
+    if (i.status !== 'skip') {
       const left = remainOf(i);
       t.paid += a - left; t.none += left;
       t.n[left ? 'none' : 'paid']++;
@@ -742,7 +743,7 @@ function monthCard(t) {
   return `<div class="card c-blue month-summary">
     <div class="ct"><span class="ic">${ICON.wallet}</span><h3>${esc(mTitle(S.month))}</h3>
       ${t.n.all ? `<span class="badge ${t.none ? 's-none' : 's-paid'}">${t.none ? t.n.none + ' khoản chờ' : '✓ Xong tháng'}</span>` : ''}</div>
-    ${has ? `<div class="lbl">${left >= 0 ? 'Còn dư' : 'Chi vượt thu nhập'}</div>
+    ${has ? `<div class="lbl">${left >= 0 ? 'Dư sau dự kiến chi' : 'Chi vượt thu nhập'}</div>
       <div class="big ${left < 0 ? 'neg' : ''}">${left < 0 ? '−' : ''}${bigNum(Math.abs(left))}</div>
       <div class="tiles">
         <button class="tile" data-income aria-label="Sửa thu nhập"><span class="lbl">Thu ${ICON.edit}</span><b>${cstr(inc)}</b>
@@ -788,7 +789,7 @@ function dueInfo(i) {
   const [y, m] = S.month.split('-').map(Number);
   const day = Math.min(d, new Date(y, m, 0).getDate());
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const left = Math.round((new Date(y, m - 1, day) - today) / 864e5), open = i.status === 'none';
+  const left = Math.round((new Date(y, m - 1, day) - today) / 864e5), open = hasDetails(i) ? remainOf(i) > 0 : i.status === 'none';
   return { label: String(day).padStart(2, '0') + '/' + String(m).padStart(2, '0'), late: open && left < 0, soon: open && left >= 0 && left <= 3, left };
 }
 function dueTag(i) {
@@ -801,8 +802,7 @@ function itemList() {
   const t = totals();
   return `<div class="list">
     ${S.items.map((i, k) => {
-      const part = i.status === 'none' && dtPaid(i) > 0, s = stOf(i), ds = i.details || [], total = amtOf(i);
-      const nPaid = ds.filter(d => d.paid).length;
+      const part = i.status !== 'skip' && hasDetails(i), s = stOf(i), ds = i.details || [], total = amtOf(i);
       const dDue = d => !d.paid && Number(d.due);
       return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
@@ -810,7 +810,7 @@ function itemList() {
           <span class="no">${k + 1}</span>
           <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div>
             <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>
-            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${Math.round(dtPaid(i) / total * 100)}%"></i></span>${nPaid}/${ds.length} đã trả</span>` : ''}</span>
+            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${Math.round(dtPaid(i) / total * 100)}%"></i></span>Đã chi ${cstr(dtPaid(i))} · Chưa chi ${cstr(remainOf(i))}</span>` : ''}</span>
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
         ${ds.length ? `<div class="dts">${ds.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
@@ -826,11 +826,11 @@ function itemSummary() {
   return `<div class="card sum">
     <div class="kv"><span>Tổng chi dự kiến</span><b>${vnd(t.active)}</b></div>
     <div class="kv sub"><span><i style="background:var(--green)"></i>Đã trả</span><b>${vnd(t.paid)}</b></div>
-    <div class="kv sub"><span><i style="background:var(--muted)"></i>Còn phải trả</span><b>${vnd(t.none)}</b></div>
+    <div class="kv sub"><span><i style="background:var(--muted)"></i>Còn giữ cho khoản chưa chi</span><b>${vnd(t.none)}</b></div>
     ${t.skip ? `<div class="kv sub"><span><i style="background:var(--orange)"></i>Hoãn (không tính)</span><b>${vnd(t.skip)}</b></div>` : ''}
     <button class="kv" data-income><span>Thu nhập ${ICON.edit}</span><b>${S.income.length ? vnd(inc) : '<em>Nhập thu nhập</em>'}</b></button>
     ${S.income.filter(x => Number(x.amount)).map(x => `<div class="kv sub"><span><i style="background:var(--teal)"></i>${esc(x.name)}${Number(x.day) ? ` · ngày ${x.day}` : ''}</span><b>${vnd(x.amount)}</b></div>`).join('')}
-    ${S.income.length ? `<div class="kv total ${left < 0 ? 'neg' : 'pos'}"><span>${left < 0 ? 'Âm (chi vượt thu)' : 'Còn dư'}</span><b>${left < 0 ? '−' : ''}${vnd(Math.abs(left))}</b></div>` : ''}
+    ${S.income.length ? `<div class="kv total ${left < 0 ? 'neg' : 'pos'}"><span>${left < 0 ? 'Âm (chi vượt thu)' : 'Dư sau dự kiến chi'}</span><b>${left < 0 ? '−' : ''}${vnd(Math.abs(left))}</b></div>` : ''}
   </div>`;
 }
 
@@ -925,7 +925,7 @@ function renderItems() {
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
   el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${esc(mTitle(S.month))}</h2></div>${itemSummary()}
     <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-goto="types">Loại chi</button></div>${itemList()}
-    <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi nhanh</div>`;
+    <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi; khoản có chi tiết sẽ mở từng mục</div>`;
 }
 
 /* ============ dòng tiền ============
@@ -965,14 +965,16 @@ function cashPlan() {
   const ev = [...ins, ...outs].sort((a, b) => a.date - b.date || rank(a) - rank(b));
 
   const lots = [], segs = [], rows = [];
+  let eventId = 0;
   let bal = 0;
   for (const e of ev) {
+    const group = eventId++;
     if (e.type === 'in') { lots.push({ date: e.date, left: e.amt }); bal += e.amt; rows.push({ ...e, bal }); continue; }
     let need = e.amt;
     const mine = [];
     while (need > 0 && lots.length) {
       const L = lots[0], use = Math.min(L.left, need);
-      if (!e.paid) mine.push({ amt: use, from: L.date, to: e.date, days: diff(L.date, e.date), why: e.name });
+      if (!e.paid) mine.push({ group, amt: use, from: L.date, to: e.date, days: diff(L.date, e.date), why: e.name });
       L.left -= use; need -= use;
       if (L.left <= 0) lots.shift();
     }
@@ -988,10 +990,21 @@ function cashPlan() {
 
   const sum = (a, f) => a.filter(f).reduce((s, x) => s + x.amt, 0);
   return {
-    base, isToday: +base === +today, rows, segs, end: bal, paidNow: +firstIn === +base,
+    base, isToday: +base === +today, rows, segs: mergeIdleSegments(segs), end: bal, paidNow: +firstIn === +base,
     inc: sum(ins, () => true), incNow: sum(ins, x => !x.later), incLater: sum(ins, x => x.later), later: ins.filter(x => x.later),
     paid: t.paid, toPay: sum(outs, x => !x.paid), shorts: rows.filter(r => r.short > 0),
   };
+}
+
+// Gộp tiền cùng khoản chi, cùng khoảng ngày; vẫn giữ riêng các ngày nhận khác nhau.
+function mergeIdleSegments(segs) {
+  const grouped = new Map();
+  for (const s of segs) {
+    const key = JSON.stringify([s.surplus ? 'surplus' : s.group, +s.from, +s.to, s.short || 0]);
+    if (grouped.has(key)) grouped.get(key).amt += s.amt;
+    else grouped.set(key, { ...s });
+  }
+  return [...grouped.values()];
 }
 
 function renderCash() {
@@ -1196,7 +1209,7 @@ const dtRow = (x = {}, c) => `<div class="dtw ${x.paid ? 'paid' : ''}">
 function openEdit(id) {
   const it = id ? S.items.find(i => i.id === id) : { name: '', amount: '', status: 'none', note: '' };
   if (!it) return;
-  let st = it.status || 'none';
+  let st = hasDetails(it) && it.status !== 'skip' ? (remainOf(it) ? 'none' : 'paid') : it.status || 'none';
   const types = typesList(), custom = !!id && !types.some(x => x.name === it.name);
   // Danh sách riêng không có tháng → chọn hạn theo tháng hiện tại, chỉ lưu số ngày
   const refM = isBoard(S.month) ? ym(new Date()) : S.month;
@@ -1216,7 +1229,7 @@ function openEdit(id) {
       <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button>
       <div class="dt-sum" id="fDtSum" hidden></div></div>
     <div class="field"><label>Hạn nộp</label><div class="row2"><input id="fDue" type="date" min="${ymd(1)}" max="${ymd(lastDay)}" value="${it.due ? ymd(Math.min(Number(it.due), lastDay)) : ''}"><button id="fDueClr" type="button">Bỏ hạn</button></div><span class="hint">Lặp lại ngày này khi sao chép sang tháng sau</span></div>
-    <div class="field"><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
+    <div class="field"><span class="hint">Có chi tiết: đã chi / chưa chi tính theo dấu tích từng dòng. Chọn Hoãn để loại cả khoản khỏi dự kiến.</span><label>Trạng thái</label><div class="chips">${Object.entries(STATUS).map(([k, v]) => `<button data-st="${k}" class="${v.cls} ${k === st ? 'on' : ''}">${v.label}</button>`).join('')}</div></div>
     <div class="field"><label>Ghi chú</label><textarea id="fNote" rows="2" placeholder="Không bắt buộc">${esc(it.note)}</textarea></div>
     ${id ? `<div class="lbl" style="margin:-4px 0 14px">Sửa lần cuối bởi ${esc(it.updatedBy || '—')}${it.updatedAt ? ' · ' + ago(it.updatedAt) : ''}</div>` : ''}
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
@@ -1278,6 +1291,7 @@ function openEdit(id) {
     const due = $('#fDue').value ? Number($('#fDue').value.slice(8)) : '';
     const details = readDts().filter(x => x.name || x.amount || x.note);
     if (details.some(x => !x.name)) return toast('Nhập tên cho dòng chi tiết', true);
+    if (dtSum({ details }) > 0 && st !== 'skip') st = details.some(d => Number(d.amount) > 0 && !d.paid) ? 'none' : 'paid';
     // Khoản mới: app tự tạo id để hiện ngay trong danh sách, không chờ server
     const item = id ? { id, name, amount, status: st, note, due, details }
       : { id: Math.random().toString(36).slice(2, 10), month: S.month, name, amount, status: st, note, due, details };
@@ -1309,6 +1323,7 @@ document.addEventListener('click', e => {
   else if (d.edit) openEdit(d.edit);
   else if (d.cycle) {
     const it = S.items.find(i => i.id === d.cycle); if (!it) return;
+    if (hasDetails(it)) { openEdit(it.id); return; }
     const status = NEXT_STATUS[it.status] || 'paid', prev = it.status, { id, name } = it;
     it.status = status; render();
     enqueue('save', { item: { id, name, status } }, `${name}: ${STATUS[status].label}`, () => {
