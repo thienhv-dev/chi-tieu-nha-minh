@@ -203,8 +203,14 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row{flex-wrap:wrap}
 .row .amt .left{color:var(--ink);font-weight:600}
 .row .amt .of{white-space:nowrap}
-.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;gap:2px;margin:-4px 0 0 38px}
-.row .dts button{display:flex;align-items:center;gap:8px;width:100%;min-width:0;padding:5px 0;font-size:13.5px;color:var(--muted);text-align:left}
+.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;margin:-2px 0 0 38px;background:var(--card2);border-radius:12px;padding:2px 12px}
+.row .dts button{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:8px 0;font-size:14px;color:var(--ink);text-align:left;border-top:1px solid var(--line)}
+.row .dts button:first-child{border-top:0}
+.row .dts .paid{color:var(--muted)}
+.row .dts .paid b{text-decoration:line-through}
+.dprog{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.dbar{display:block;flex:1;height:4px;border-radius:4px;background:var(--gray-t);overflow:hidden;max-width:160px}
+.dbar i{display:block;height:100%;background:var(--green);border-radius:4px}
 .row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
 .row .dts .paid .ck{background:var(--green);border-color:var(--green)}
 .row .dts .dn .t{font-style:normal}
@@ -212,10 +218,10 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row .dts .paid .dn .t{text-decoration:line-through}
 .row .dts .dn{flex:1;min-width:0;overflow:hidden}
 .row .dts .dn .t{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .dts b{flex:none;font-weight:500;white-space:nowrap}
+.row .dts b{flex:none;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dt-sum{margin-top:8px;font-size:13.5px;color:var(--muted)}
 .dt-sum b{color:var(--ink)}
-.dt-sum .warn{color:var(--orange);margin-top:3px}
+.amt-in[readonly]{color:var(--muted);background:var(--gray-t)}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
 .field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
 .field select{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 40px 13px 14px;font:inherit;font-size:16px;color:inherit;outline:none;appearance:none;-webkit-appearance:none;
@@ -658,9 +664,12 @@ function dtName(i, d) {
   if (!p || !n.toLowerCase().startsWith(p.toLowerCase())) return n;
   return n.slice(p.length).replace(/^[\s\-–—:·|]+/, '') || n;
 }
+// Khoản có chi tiết: số tiền = tổng chi tiết (số nhập tay chỉ dùng khi chưa có chi tiết nào có số tiền)
+const dtSum = i => (i.details || []).reduce((s, d) => s + (Number(d.amount) || 0), 0);
+const amtOf = i => dtSum(i) || Number(i.amount) || 0;
 // Khoản "Chưa trả" có chi tiết đã trả → đã trả một phần; còn lại = số tiền − phần đã trả
 const dtPaid = i => (i.details || []).reduce((s, d) => s + (d.paid ? Number(d.amount) || 0 : 0), 0);
-const remainOf = i => i.status === 'none' ? Math.max(0, (Number(i.amount) || 0) - dtPaid(i)) : 0;
+const remainOf = i => i.status === 'none' ? Math.max(0, amtOf(i) - dtPaid(i)) : 0;
 // Nhãn trạng thái hiển thị: thêm "Đang trả" cho khoản đã trả một phần
 function stOf(i) {
   if (i.status === 'none' && dtPaid(i) > 0) return remainOf(i) ? { label: 'Đang trả', cls: 's-part' } : STATUS.paid;
@@ -670,7 +679,7 @@ function stOf(i) {
 function totals() {
   const t = { all: 0, paid: 0, none: 0, skip: 0, n: { all: 0, paid: 0, none: 0, skip: 0 } };
   S.items.forEach(i => {
-    const a = Number(i.amount) || 0;
+    const a = amtOf(i);
     t.all += a; t.n.all++;
     if (i.status === 'none') {
       const left = remainOf(i);
@@ -782,17 +791,21 @@ function itemList() {
   const t = totals();
   return `<div class="list">
     ${S.items.map((i, k) => {
-      const part = i.status === 'none' && dtPaid(i) > 0, s = stOf(i);
+      const part = i.status === 'none' && dtPaid(i) > 0, s = stOf(i), ds = i.details || [], total = amtOf(i);
+      const nPaid = ds.filter(d => d.paid).length, iDue = effDue(i);
+      // Chi tiết cùng hạn với khoản thì không lặp lại nhãn hạn, chỉ hiện hạn khác
+      const dDue = d => !d.paid && Number(d.due) && Number(d.due) !== iDue;
       return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
           <span class="no">${k + 1}</span>
           <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div>
-            <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(i.amount)}</span>` : vnd(i.amount)}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div></span>
+            <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>
+            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${Math.round(dtPaid(i) / total * 100)}%"></i></span>${nPaid}/${ds.length} đã trả</span>` : ''}</span>
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
-        ${(i.details || []).length ? `<div class="dts">${i.details.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
-          <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn"><i class="t">${esc(dtName(i, d))}</i>${(Number(d.due) && !d.paid) || d.note ? `<small>${Number(d.due) && !d.paid ? dueTag({ due: d.due, status: 'none' }) : ''}${d.note ? `<em>${esc(d.note)}</em>` : ''}</small>` : ''}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
+        ${ds.length ? `<div class="dts">${ds.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
+          <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn"><i class="t">${esc(dtName(i, d))}</i>${dDue(d) || d.note ? `<small>${dDue(d) ? dueTag({ due: d.due, status: 'none' }) : ''}${d.note ? `<em>${esc(d.note)}</em>` : ''}</small>` : ''}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
       </div>`; }).join('')}
     <div class="total-row"><span>Tổng cộng${t.skip ? ' <small>(không tính Hoãn)</small>' : ''}</span><span>${vnd(t.active)}</span></div>
   </div>`;
@@ -1188,7 +1201,7 @@ function openEdit(id) {
         <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
       </select>
       <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
-    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${it.amount ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0 · VD 2tr5, 500k"></div>
+    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${amtOf(it) ? amtOf(it).toLocaleString('vi-VN') : ''}" placeholder="0 · VD 2tr5, 500k"><span class="hint" id="fAmtHint" hidden>Tự tính = tổng các chi tiết bên dưới</span></div>
     <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc · chạm ○ khi đã trả)</span></label>
       <div id="fDts">${(it.details || []).map(x => dtRow(x, dctx)).join('')}</div>
       <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button>
@@ -1200,18 +1213,20 @@ function openEdit(id) {
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
   const amt = $('#fAmt');
   amt.oninput = () => fmtAmt(amt);
-  // Chi tiết nằm trong số tiền của khoản; dòng nào đã trả thì trừ ra → còn lại
+  // Có chi tiết thì số tiền của khoản = tổng chi tiết (khoá ô nhập); dòng nào đã trả thì trừ ra → còn lại
   const dts = $('#fDts');
   const readDts = () => [...dts.querySelectorAll('.dtw')].map(r => ({
     name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on'),
     note: r.querySelector('.dnote').value.trim(), due: r.querySelector('.ddate').value ? Number(r.querySelector('.ddate').value.slice(8)) : '',
   }));
   const showSum = () => {
-    const list = readDts().filter(x => x.name || x.amount), total = parseAmt(amt.value);
+    const list = readDts().filter(x => x.name || x.amount);
     const paid = list.reduce((s, x) => s + (x.paid ? x.amount : 0), 0), inDt = list.reduce((s, x) => s + x.amount, 0);
+    amt.readOnly = inDt > 0; $('#fAmtHint').hidden = !inDt;
+    if (inDt) amt.value = inDt.toLocaleString('vi-VN');
+    const total = parseAmt(amt.value);
     $('#fDtSum').hidden = !list.length;
-    $('#fDtSum').innerHTML = `Đã trả <b>${vnd(paid)}</b> · Còn lại <b>${vnd(Math.max(0, total - paid))}</b>`
-      + (inDt > total ? `<div class="warn">Tổng chi tiết (${vnd(inDt)}) lớn hơn số tiền của khoản</div>` : '');
+    $('#fDtSum').innerHTML = `Đã trả <b>${vnd(paid)}</b> · Còn lại <b>${vnd(Math.max(0, total - paid))}</b>`;
   };
   amt.addEventListener('input', showSum);
   dts.oninput = e => {
