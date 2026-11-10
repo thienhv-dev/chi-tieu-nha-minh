@@ -14,7 +14,7 @@
 <title>Chi tiêu nhà mình</title>
 <style>
 :root{
-  --bg:#f2f1f6; --card:#ffffff; --card2:#f7f6fa; --ink:#1c1c1e; --muted:#8e8e93; --line:#e5e5ea;
+  --bg:#f2f4f8; --card:#ffffff; --card2:#f6f8fb; --ink:#1c2434; --muted:#687386; --line:#e5e9f0;
   --blue:#2f7cf6; --blue-t:#e7f0ff; --green:#22a447; --green-t:#e6f6ea; --pink:#e5486a; --pink-t:#fdebef;
   --orange:#f0961e; --orange-t:#fdf1e2; --teal:#14a3a8; --teal-t:#e2f5f5; --gray-t:#ececf0;
   --dot-off:rgba(60,60,67,.12); --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.05);
@@ -22,13 +22,13 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#8e8e93; --line:#2c2c30;
+    --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#a0a0ab; --line:#2c2c30;
     --blue-t:#16243d; --green-t:#132a1b; --pink-t:#35161e; --orange-t:#33240f; --teal-t:#0f2a2b; --gray-t:#2a2a2e;
     --dot-off:rgba(235,235,245,.12); --shadow:none;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#8e8e93; --line:#2c2c30;
+  --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#a0a0ab; --line:#2c2c30;
   --blue-t:#16243d; --green-t:#132a1b; --pink-t:#35161e; --orange-t:#33240f; --teal-t:#0f2a2b; --gray-t:#2a2a2e;
   --dot-off:rgba(235,235,245,.12); --shadow:none;
 }
@@ -76,7 +76,15 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:6px}
 @media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+#tab-overview .grid{align-items:start;grid-template-columns:minmax(0,1fr)}
+@media(min-width:860px){#tab-overview .grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}}
 .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
+.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 7%,var(--card)),var(--card) 75%);border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
+.month-summary .tiles{margin-top:20px}
+.month-summary .tile{background:color-mix(in srgb,var(--card) 75%,transparent);border:1px solid var(--line)}
+.month-summary .big{margin-top:6px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.month-summary .ct h3,.card.c-pink .ct h3{color:var(--ink)}
+.card.c-pink .ct .ic{background:var(--card2);color:var(--muted)}
 .ct{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .ct .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
 .ct .ic svg{width:17px;height:17px}
@@ -236,7 +244,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .tp-dirty button{color:var(--muted);font-weight:600;font-size:13.5px}
 .addrow{color:var(--blue);font-weight:600;font-size:15px;padding:4px 0 14px}
 .inc-sum{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-size:15px}
-.ct h3 .cnt{font-size:13px;font-weight:600;background:var(--pink);color:#fff;border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
+.ct h3 .cnt{font-size:13px;font-weight:600;background:var(--gray-t);color:var(--muted);border-radius:999px;padding:1px 8px;vertical-align:3px;margin-left:4px}
 .due{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .ct + .due{border-top:0;padding-top:0}
 .due .nm{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;font-size:15px}
@@ -273,7 +281,9 @@ nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-conte
 nav .in{display:flex;gap:6px;max-width:480px;width:100%}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--muted);padding:6px 0;border-radius:12px}
 nav button svg{width:24px;height:24px}
-nav button.on{color:var(--blue)}
+nav button.on{color:var(--blue);font-weight:600;background:var(--blue-t)}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+button{touch-action:manipulation}
 .fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:31;width:56px;height:56px;border-radius:50%;
   background:var(--blue);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(47,124,246,.4)}
 .fab svg{width:26px;height:26px}
@@ -729,7 +739,7 @@ function monthCard(t) {
   const inc = S.income.reduce((s, x) => s + (Number(x.amount) || 0), 0), has = S.income.length > 0;
   const left = inc - t.active;
   const seg = (v, c) => v && t.all ? `<i style="width:${v / t.all * 100}%;background:${c}"></i>` : '';
-  return `<div class="card c-blue">
+  return `<div class="card c-blue month-summary">
     <div class="ct"><span class="ic">${ICON.wallet}</span><h3>${esc(mTitle(S.month))}</h3>
       ${t.n.all ? `<span class="badge ${t.none ? 's-none' : 's-paid'}">${t.none ? t.n.none + ' khoản chờ' : '✓ Xong tháng'}</span>` : ''}</div>
     ${has ? `<div class="lbl">${left >= 0 ? 'Còn dư' : 'Chi vượt thu nhập'}</div>
