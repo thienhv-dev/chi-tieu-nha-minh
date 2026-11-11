@@ -59,7 +59,6 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .seg button{border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;scroll-snap-align:center}
 .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1);display:inline-flex;align-items:center;gap:5px}
 .seg button.on svg{width:12px;height:12px;color:var(--muted)}
-.seg.half button{flex:1;justify-content:center}
 .seg .arrow{padding:7px 10px;color:var(--ink)}
 .rn{margin-left:6px;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;color:var(--muted);vertical-align:-5px}
 .rn svg{width:14px;height:14px}
@@ -410,7 +409,6 @@ const S = {
   user: LS.get('ct_user', ''),
   pin: LS.get('ct_pin', ''),
   month: ym(now),
-  view: LS.get('ct_view', 'status') === 'order' ? 'order' : 'status',
   tab: ['overview', 'items', 'cash', 'types'].includes(LS.get('ct_tab', '')) ? LS.get('ct_tab', '') : 'overview',
   items: [], months: [], monthNames: {}, income: [], lastIncome: [], types: [],
   loading: false, busy: false,
@@ -821,18 +819,15 @@ function itemRow(i, k) {
       </div>`;
 }
 
-// Bố cục "Theo trạng thái": Chưa trả (gồm Đang chi) trên đầu, rồi Đã trả, Hoãn; mỗi nhóm đánh số lại từ 1
+// Nhóm theo trạng thái: Chưa trả (gồm Đang chi) trên đầu, rồi Đã trả, Hoãn; mỗi nhóm đánh số lại từ 1
 function itemList() {
   const t = totals();
-  let body = S.items.map(itemRow).join('');
-  if (S.view === 'status') {
-    const groups = [
+  const groups = [
       ['Chưa trả', S.items.filter(i => i.status !== 'skip' && stOf(i) !== STATUS.paid), remainOf],
-      ['Đã trả', S.items.filter(i => i.status !== 'skip' && stOf(i) === STATUS.paid), amtOf],
-      ['Hoãn', S.items.filter(i => i.status === 'skip'), amtOf],
-    ].filter(g => g[1].length);
-    body = groups.map(([name, list, f]) => `<div class="grp"><span>${name} <small>${list.length}</small></span><span>${vnd(list.reduce((s, i) => s + f(i), 0))}</span></div>${list.map(itemRow).join('')}`).join('');
-  }
+    ['Đã trả', S.items.filter(i => i.status !== 'skip' && stOf(i) === STATUS.paid), amtOf],
+    ['Hoãn', S.items.filter(i => i.status === 'skip'), amtOf],
+  ].filter(g => g[1].length);
+  const body = groups.map(([name, list, f]) => `<div class="grp"><span>${name} <small>${list.length}</small></span><span>${vnd(list.reduce((s, i) => s + f(i), 0))}</span></div>${list.map(itemRow).join('')}`).join('');
   return `<div class="list">
     ${body}
     <div class="total-row"><span>Tổng cộng${t.skip ? ' <small>(không tính Hoãn)</small>' : ''}</span><span>${vnd(t.active)}</span></div>
@@ -943,8 +938,7 @@ function renderItems() {
   const el = $('#tab-items');
   if (!S.items.length) { el.innerHTML = emptyState(); return; }
   el.innerHTML = `<div class="sec" style="margin-top:8px"><h2>${esc(mTitle(S.month))}</h2></div>${itemSummary()}
-    <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-goto="types">Loại chi</button></div>
-    <div class="seg half" style="margin:0 0 10px">${[['status', 'Theo trạng thái'], ['order', 'Theo thứ tự']].map(([v, l]) => `<button data-view="${v}" class="${S.view === v ? 'on' : ''}">${l}</button>`).join('')}</div>${itemList()}
+    <div class="sec"><h2>Các khoản</h2><button class="btn sm ghost" data-goto="types">Loại chi</button></div>${itemList()}
     <div class="lbl" style="text-align:center;margin-top:10px">Chạm trạng thái để đổi; khoản có chi tiết sẽ mở từng mục</div>`;
 }
 
@@ -1346,7 +1340,6 @@ document.addEventListener('click', e => {
   if ('newboard' in d) return openNewBoard();
   if ((d.tab || d.goto) && (d.tab || d.goto) !== 'types' && !leaveTypes()) return;
   if (d.tab) { S.tab = d.tab; LS.set('ct_tab', d.tab); render(); scrollTo({ top: 0 }); }
-  else if (d.view) { S.view = d.view; LS.set('ct_view', d.view); render(); }
   else if (d.goto) { if (sheetOpen) closeSheet(); S.tab = d.goto; LS.set('ct_tab', d.goto); render(); scrollTo({ top: 0 }); }
   else if (d.m) switchMonth(d.m);
   else if ('sync' in d) { if (qError) openSyncIssue(); }
