@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f2f1f6">
+<meta name="theme-color" content="#fff4f7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chi tiêu">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,22 +14,24 @@
 <title>Chi tiêu nhà mình</title>
 <style>
 :root{
-  --bg:#f2f4f8; --card:#ffffff; --card2:#f6f8fb; --ink:#1c2434; --muted:#687386; --line:#e5e9f0;
-  --blue:#2f7cf6; --blue-t:#e7f0ff; --green:#22a447; --green-t:#e6f6ea; --pink:#e5486a; --pink-t:#fdebef;
-  --orange:#f0961e; --orange-t:#fdf1e2; --teal:#14a3a8; --teal-t:#e2f5f5; --gray-t:#ececf0;
-  --dot-off:rgba(60,60,67,.12); --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.05);
-  --radius:22px;
+  --bg:#fff4f7; --card:#fffdfd; --card2:#fff1f5; --ink:#382630; --muted:#826571; --line:#f0dfe6;
+  --blue:#b84770; --blue-t:#fce4ed; --green:#288351; --green-t:#e9f5ec; --pink:#c33951; --pink-t:#ffe9ed;
+  --orange:#a56824; --orange-t:#fff1df; --teal:#357f83; --teal-t:#e9f5f3; --gray-t:#f5e8ee;
+  --dot-off:rgba(130,75,98,.14); --shadow:0 1px 3px rgba(112,47,76,.03),0 6px 24px rgba(112,47,76,.06);
+  --on-accent:#fff; --radius:22px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#a0a0ab; --line:#2c2c30;
-    --blue-t:#16243d; --green-t:#132a1b; --pink-t:#35161e; --orange-t:#33240f; --teal-t:#0f2a2b; --gray-t:#2a2a2e;
+    --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
+    --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
+    --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34;
     --dot-off:rgba(235,235,245,.12); --shadow:none;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#111114; --card:#1c1c1f; --card2:#242428; --ink:#f2f2f7; --muted:#a0a0ab; --line:#2c2c30;
-  --blue-t:#16243d; --green-t:#132a1b; --pink-t:#35161e; --orange-t:#33240f; --teal-t:#0f2a2b; --gray-t:#2a2a2e;
+  --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
+    --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
+  --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34;
   --dot-off:rgba(235,235,245,.12); --shadow:none;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -57,7 +59,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .seg .months{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;scroll-snap-type:x mandatory}
 .seg .months::-webkit-scrollbar{display:none}
 .seg button{border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;scroll-snap-align:center}
-.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1);display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:var(--card);color:var(--blue);font-weight:600;box-shadow:0 1px 4px rgba(112,47,76,.1);display:inline-flex;align-items:center;gap:5px}
 .seg button.on svg{width:12px;height:12px;color:var(--muted)}
 .seg .arrow{padding:7px 10px;color:var(--ink)}
 .rn{margin-left:6px;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;color:var(--muted);vertical-align:-5px}
@@ -65,7 +67,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .boards{display:flex;gap:6px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
 .boards::-webkit-scrollbar{display:none}
 .boards button{flex:none;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);border:1px solid var(--line);white-space:nowrap}
-.boards button.on{background:var(--ink);border-color:var(--ink);color:var(--card);font-weight:600}
+.boards button.on{background:var(--blue-t);border-color:color-mix(in srgb,var(--blue) 25%,var(--line));color:var(--blue);font-weight:600}
 .boards .add{border-style:dashed;color:var(--blue)}
 .lockbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:8px 12px;border-radius:12px;background:var(--gray-t);font-size:13.5px;color:var(--muted);font-weight:500}
 .lockbar button{color:var(--blue);font-weight:700;font-size:13.5px;white-space:nowrap}
@@ -79,7 +81,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 #tab-overview .grid{align-items:start;grid-template-columns:minmax(0,1fr)}
 @media(min-width:860px){#tab-overview .grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}}
 .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
-.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 7%,var(--card)),var(--card) 75%);border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
+.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 12%,var(--card)),var(--card) 85%);border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
 .month-summary .tiles{margin-top:20px}
 .month-summary .tile{background:color-mix(in srgb,var(--card) 75%,transparent);border:1px solid var(--line)}
 .month-summary .big{margin-top:6px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
@@ -271,7 +273,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .grp small{font-weight:600;margin-left:4px;padding:1px 7px;border-radius:999px;background:var(--gray-t)}
 .grp + .row{border-top:0}
 .total-row{display:flex;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--line);font-weight:700;background:var(--card2)}
-.btn{background:var(--blue);color:#fff;border-radius:14px;padding:12px 18px;font-weight:600}
+.btn{background:var(--blue);color:var(--on-accent);border-radius:14px;padding:12px 18px;font-weight:600}
 .btn.ghost{background:var(--gray-t);color:var(--ink)}
 .btn.danger{background:var(--pink-t);color:var(--pink)}
 .btn.sm{padding:7px 14px;border-radius:999px;font-size:14px}
@@ -289,7 +291,7 @@ nav button.on{color:var(--blue);font-weight:600;background:var(--blue-t)}
 button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 button{touch-action:manipulation}
 .fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:31;width:56px;height:56px;border-radius:50%;
-  background:var(--blue);color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(47,124,246,.4)}
+  background:var(--blue);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--blue) 30%,transparent)}
 .fab svg{width:26px;height:26px}
 
 /* sheet */
