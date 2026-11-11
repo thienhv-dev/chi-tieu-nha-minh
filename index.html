@@ -3,40 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#fff4f7">
+<meta name="theme-color" content="#fff0f5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chi tiêu">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>Chi tiêu nhà mình</title>
 <style>
 :root{
-  --bg:#fff4f7; --card:#fffdfd; --card2:#fff1f5; --ink:#382630; --muted:#826571; --line:#f0dfe6;
-  --blue:#b84770; --blue-t:#fce4ed; --green:#288351; --green-t:#e9f5ec; --pink:#c33951; --pink-t:#ffe9ed;
-  --orange:#a56824; --orange-t:#fff1df; --teal:#357f83; --teal-t:#e9f5f3; --gray-t:#f5e8ee;
-  --dot-off:rgba(130,75,98,.14); --shadow:0 1px 3px rgba(112,47,76,.03),0 6px 24px rgba(112,47,76,.06);
-  --on-accent:#fff; --radius:22px;
+  --bg:#fff0f5; --card:#ffffff; --card2:#fff6f9; --ink:#4b2142; --muted:#a8708f; --line:#fbe1eb;
+  --blue:#e5578a; --blue-t:#ffe3ee; --green:#2a9466; --green-t:#e1f6ea; --pink:#dc4569; --pink-t:#ffe4eb;
+  --orange:#c97b22; --orange-t:#fff0dc; --teal:#3a8bd1; --teal-t:#e1efff; --gray-t:#fde8f0;
+  --sky:#3a8bd1; --sky-t:#e1efff; --sky-bg:#eef6ff;
+  --dot-off:rgba(229,87,138,.16); --shadow:0 2px 6px rgba(229,87,138,.05),0 10px 28px rgba(229,87,138,.09);
+  --on-accent:#fff; --radius:24px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
     --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
-    --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34;
+    --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247; --sky-bg:#151b24;
     --dot-off:rgba(235,235,245,.12); --shadow:none;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
     --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
-  --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34;
+  --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247; --sky-bg:#151b24;
   --dot-off:rgba(235,235,245,.12); --shadow:none;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
-body{font:15px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+body{background:linear-gradient(180deg,var(--bg) 0,var(--sky-bg) 100%);min-height:100vh}
+body{font:15px/1.35 Nunito,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
   padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 input,textarea{font:inherit;color:inherit}
@@ -46,7 +50,8 @@ input,textarea{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);
   backdrop-filter:saturate(1.6) blur(18px);-webkit-backdrop-filter:saturate(1.6) blur(18px);padding:14px 0 10px}
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0}
+.h1{font-size:clamp(21px,6.4vw,26px);font-weight:700;letter-spacing:-.02em;margin:0;white-space:nowrap}
+.h1 span{font-size:.72em;vertical-align:2px;white-space:nowrap}
 .sub{color:var(--muted);font-size:13px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sync{margin-left:8px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;vertical-align:1px}
 .sync.busy{background:var(--orange-t);color:var(--orange)}
@@ -59,7 +64,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .seg .months{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1;scroll-snap-type:x mandatory}
 .seg .months::-webkit-scrollbar{display:none}
 .seg button{border-radius:999px;padding:7px 14px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;scroll-snap-align:center}
-.seg button.on{background:var(--card);color:var(--blue);font-weight:600;box-shadow:0 1px 4px rgba(112,47,76,.1);display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:var(--card);color:var(--blue);font-weight:600;box-shadow:0 1px 4px rgba(229,87,138,.15);display:inline-flex;align-items:center;gap:5px}
 .seg button.on svg{width:12px;height:12px;color:var(--muted)}
 .seg .arrow{padding:7px 10px;color:var(--ink)}
 .rn{margin-left:6px;width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;color:var(--muted);vertical-align:-5px}
@@ -81,7 +86,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 #tab-overview .grid{align-items:start;grid-template-columns:minmax(0,1fr)}
 @media(min-width:860px){#tab-overview .grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}}
 .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
-.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 12%,var(--card)),var(--card) 85%);border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
+.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 12%,var(--card)),var(--card) 55%,var(--sky-t));border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
 .month-summary .tiles{margin-top:20px}
 .month-summary .tile{background:color-mix(in srgb,var(--card) 75%,transparent);border:1px solid var(--line)}
 .month-summary .big{margin-top:6px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
@@ -132,12 +137,12 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);width:100%;text-align:left}
 .row:first-child{border-top:0}
 .row:active{background:var(--card2)}
-.row .no{width:26px;height:26px;border-radius:8px;background:var(--gray-t);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--muted);flex:none}
+.row .no{width:26px;height:26px;border-radius:50%;background:var(--blue-t);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--blue);flex:none}
 .row .mid{flex:1;min-width:0}
 .row .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .amt{font-size:13px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .row.skip .nm,.row.skip .amt{text-decoration:line-through;opacity:.55}
-.pill{font-size:13px;font-weight:600;padding:6px 12px;border-radius:999px;white-space:nowrap;flex:none;min-width:84px;text-align:center}
+.pill{font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap;flex:none;min-width:84px;text-align:center}
 .payer b{font-size:17px;white-space:nowrap}
 .split{display:flex;height:8px;border-radius:8px;overflow:hidden;background:var(--gray-t);margin:4px 0 16px}
 .split i{display:block;height:100%}
@@ -209,11 +214,11 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .dt-f.wide{grid-column:1/-1}
 .row .dts .dn small{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:12px;color:var(--muted);min-width:0}
 .row .dts .dn small em{font-style:normal;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.s-part{background:var(--blue-t);color:var(--blue)}
+.s-part{background:var(--sky-t);color:var(--sky)}
 .row{flex-wrap:wrap}
 .row .amt .left{color:var(--ink);font-weight:600}
 .row .amt .of{white-space:nowrap}
-.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;margin:-2px 0 0 38px;background:var(--card2);border-radius:12px;padding:2px 12px}
+.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;margin:-2px 0 0 38px;background:var(--sky-bg);border-radius:12px;padding:2px 12px}
 .row .dts button{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:8px 0;font-size:14px;color:var(--ink);text-align:left;border-top:1px solid var(--line)}
 .row .dts button:first-child{border-top:0}
 .row .dts .paid{color:var(--muted)}
@@ -265,7 +270,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .inc-empty .lbl{flex:1;min-width:160px}
 .field .hint{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
 .field .hint button{color:var(--blue);font-weight:600;font-size:13px}
-.s-none{background:var(--gray-t);color:var(--muted)}
+.s-none{background:var(--blue-t);color:var(--blue)}
 .s-paid{background:var(--green-t);color:var(--green)}
 .s-skip{background:var(--orange-t);color:var(--orange)}
 .grp{display:flex;justify-content:space-between;gap:10px;padding:10px 16px 8px;background:var(--card2);border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted)}
@@ -274,7 +279,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .grp + .row{border-top:0}
 .total-row{display:flex;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--line);font-weight:700;background:var(--card2)}
 .btn{background:var(--blue);color:var(--on-accent);border-radius:14px;padding:12px 18px;font-weight:600}
-.btn.ghost{background:var(--gray-t);color:var(--ink)}
+.btn.ghost{background:var(--blue-t);color:var(--blue)}
 .btn.danger{background:var(--pink-t);color:var(--pink)}
 .btn.sm{padding:7px 14px;border-radius:999px;font-size:14px}
 .empty{text-align:center;padding:36px 20px;color:var(--muted)}
@@ -291,7 +296,7 @@ nav button.on{color:var(--blue);font-weight:600;background:var(--blue-t)}
 button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 button{touch-action:manipulation}
 .fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:31;width:56px;height:56px;border-radius:50%;
-  background:var(--blue);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--blue) 30%,transparent)}
+  background:linear-gradient(135deg,var(--blue),color-mix(in srgb,var(--blue) 55%,var(--sky)));color:var(--on-accent);display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--blue) 30%,transparent)}
 .fab svg{width:26px;height:26px}
 
 /* sheet */
@@ -338,7 +343,7 @@ button{touch-action:manipulation}
   <div class="wrap">
     <div class="hrow">
       <div style="min-width:0">
-        <h1 class="h1">Chi tiêu nhà mình</h1>
+        <h1 class="h1">Chi tiêu nhà mình <span aria-hidden="true">🌸</span></h1>
         <div class="sub"><span id="sub">Đang tải…</span><button class="rn" data-rename aria-label="Đặt tên"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button><button class="sync" id="sync" data-sync hidden></button></div>
       </div>
       <button class="me" id="meBtn"><span class="av" id="meAv">?</span><span id="meName">Chọn</span></button>
@@ -382,8 +387,8 @@ button{touch-action:manipulation}
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbw2gmop5py9aX1TJJAzJJv_Qg95kihGKzsOdMJj63nJoU7gYOlQTWuwxEvBWY0bUK0i/exec',
   USERS: [
-    { id: 'Chồng', color: '#2f7cf6' },
-    { id: 'Vợ', color: '#e5486a' },
+    { id: 'Chồng', color: '#5aa9e6' },
+    { id: 'Vợ', color: '#f06292' },
   ],
   POLL_MS: 20000,
 };
