@@ -195,14 +195,14 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .dtw .pd{width:26px;height:26px;flex:none;border-radius:50%;border:2px solid var(--line);background:var(--card);display:grid;place-items:center;color:transparent;transition:all .15s}
 .dtw .pd svg{width:14px;height:14px}
 .dtw .pd.on{background:var(--green);border-color:var(--green);color:#fff}
-.field .dtw .nm{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;font-weight:600;font-size:15.5px}
+.field .dtw .nm{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;font-weight:600;font-size:16px}
 .dtw.paid .nm{text-decoration:line-through;color:var(--muted)}
 .dtw .x{width:28px;height:28px;flex:none;border-radius:50%;color:var(--muted);font-size:20px;line-height:1}
 .dtw .x:active{background:var(--gray-t)}
 .dt-mid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 6px 36px}
 .field .dt-f{margin:0;font-size:11.5px}
 .dt-f span{display:block;margin-bottom:3px}
-.field .dt-f input{padding:8px 10px;font-size:14.5px;border-radius:10px;background:var(--card)}
+.field .dt-f input{padding:8px 10px;font-size:16px;border-radius:10px;background:var(--card)}
 .field .dt-f .amt{text-align:right;font-weight:600}
 .dt-f.wide{grid-column:1/-1}
 .row .dts .dn small{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:12px;color:var(--muted);min-width:0}
@@ -1304,6 +1304,15 @@ function openEdit(id) {
 }
 
 /* ============ events ============ */
+// Lỡ phóng to bằng 2 ngón: thả tay là về lại cỡ chuẩn (đổi tạm meta viewport sẽ reset zoom)
+if (window.visualViewport) {
+  const vp = document.querySelector('meta[name=viewport]'), base = vp.content;
+  document.addEventListener('touchend', e => {
+    if (e.touches.length || visualViewport.scale <= 1.01) return;
+    vp.content = base + ',maximum-scale=1';
+    setTimeout(() => { vp.content = base; }, 300);
+  }, { passive: true });
+}
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset;
