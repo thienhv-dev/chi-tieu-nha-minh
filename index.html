@@ -222,12 +222,19 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row .dts button:first-child{border-top:0}
 .row .dts .paid{color:var(--muted)}
 .row .dts .paid b{text-decoration:line-through}
-.dprog{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);white-space:normal}
-.dbar{display:flex;flex:1;height:4px;border-radius:4px;background:var(--gray-t);overflow:hidden;max-width:160px}
+.dprog{flex:0 0 calc(100% - 38px);min-width:0;margin:-4px 0 0 38px}
+.dbar{display:flex;width:100%;height:7px;border-radius:7px;background:var(--gray-t);overflow:hidden}
 .dbar i{display:block;height:100%;background:var(--green)}
-.dbar i.u{background:color-mix(in srgb,var(--blue) 35%,var(--card))}
-.dprog .over{color:var(--pink);font-weight:700}
-.dprog .nw{white-space:nowrap}
+.dbar i.u{background:color-mix(in srgb,var(--blue) 60%,var(--card))}
+.dleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.dleg span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.dleg i{width:8px;height:8px;border-radius:50%;flex:none}
+.dleg b{color:var(--ink);font-weight:700}
+.dleg .g i{background:var(--green)}
+.dleg .u i{background:color-mix(in srgb,var(--blue) 60%,var(--card))}
+.dleg .e i{background:var(--gray-t);box-shadow:inset 0 0 0 1px var(--line)}
+.dleg .over,.dleg .over b{color:var(--pink)}
+.dleg .over i{background:var(--pink)}
 .row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
 .row .dts .paid .ck{background:var(--green);border-color:var(--green)}
 .row .dts .dn .t{font-style:normal}
@@ -817,18 +824,20 @@ function dueTag(i) {
 function itemRow(i, k) {
       const part = i.status !== 'skip' && hasDetails(i), s = stOf(i), ds = i.details || [], total = amtOf(i);
       const base = Number(i.amount) || 0, inDt = dtSum(i), paid = dtPaid(i), pct = n => Math.round(n / total * 100) + '%';
-      const nw = (l, n) => `<span class="nw">${l} ${cstr(n)}</span>`;
-      const diff = !base ? '' : inDt > base ? ` · <span class="over nw">Vượt ${cstr(inDt - base)}</span>` : base > inDt ? ' · ' + nw('Còn dư', base - inDt) : '';
+      // Chú thích có chấm màu khớp từng đoạn của thanh: đã trả / chi tiết chưa trả / còn dư (phần xám) hoặc vượt
+      const leg = (c, l, n) => `<span class="${c}"><i></i>${l} <b>${cstr(n)}</b></span>`;
+      const legend = (paid ? leg('g', 'Đã trả', paid) : '') + (inDt > paid ? leg('u', 'Chưa trả', inDt - paid) : '')
+        + (base > inDt ? leg('e', 'Còn dư', base - inDt) : base && inDt > base ? leg('over', 'Vượt', inDt - base) : '');
       const dDue = d => !d.paid && Number(d.due);
       return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
           <span class="no">${k + 1}</span>
           <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div>
-            <div class="amt">${part && remainOf(i) ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>
-            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${pct(paid)}"></i><i class="u" style="width:${pct(inDt - paid)}"></i></span><span>${nw('Chi tiết', inDt)} · ${nw('Đã trả', paid)}${diff}</span></span>` : ''}</span>
+            <div class="amt">${part && remainOf(i) ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div></span>
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
+        ${part ? `<div class="dprog"><span class="dbar"><i style="width:${pct(paid)}"></i><i class="u" style="width:${pct(inDt - paid)}"></i></span><span class="dleg">${legend}</span></div>` : ''}
         ${ds.length ? `<div class="dts">${ds.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
           <span class="ck">${d.paid ? '✓' : ''}</span><span class="dn"><i class="t">${esc(dtName(i, d))}</i>${dDue(d) || d.note ? `<small>${dDue(d) ? dueTag({ due: d.due, status: 'none' }) : ''}${d.note ? `<em>${esc(d.note)}</em>` : ''}</small>` : ''}</span><b>${vnd(d.amount)}</b></button>`).join('')}</div>` : ''}
       </div>`;
