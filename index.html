@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#fff0f5">
+<meta name="theme-color" content="#fcf7f9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chi tiêu">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,30 +16,29 @@
 <title>Chi tiêu nhà mình</title>
 <style>
 :root{
-  --bg:#fff0f5; --card:#ffffff; --card2:#fff6f9; --ink:#4b2142; --muted:#a8708f; --line:#fbe1eb;
-  --blue:#e5578a; --blue-t:#ffe3ee; --green:#2a9466; --green-t:#e1f6ea; --pink:#dc4569; --pink-t:#ffe4eb;
-  --orange:#c97b22; --orange-t:#fff0dc; --teal:#3a8bd1; --teal-t:#e1efff; --gray-t:#fde8f0;
-  --sky:#3a8bd1; --sky-t:#e1efff; --sky-bg:#eef6ff;
-  --dot-off:rgba(229,87,138,.16); --shadow:0 2px 6px rgba(229,87,138,.05),0 10px 28px rgba(229,87,138,.09);
+  --bg:#fcf7f9; --card:#ffffff; --card2:#f9f4f7; --ink:#3a1d33; --muted:#866379; --line:#f0e4ea;
+  --blue:#d6457d; --blue-t:#fce8f0; --green:#23885c; --green-t:#e4f4ea; --pink:#d03a5e; --pink-t:#fde7ec;
+  --orange:#b86e1c; --orange-t:#fdf0df; --teal:#2f7ec2; --teal-t:#e6f1fb; --gray-t:#f5edf1;
+  --sky:#2f7ec2; --sky-t:#e6f1fb;
+  --dot-off:rgba(134,99,121,.16); --shadow:0 1px 3px rgba(58,29,51,.04),0 6px 20px rgba(58,29,51,.05);
   --on-accent:#fff; --radius:24px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
     --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
-    --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247; --sky-bg:#151b24;
+    --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247;
     --dot-off:rgba(235,235,245,.12); --shadow:none;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1a1318; --card:#261d23; --card2:#30232b; --ink:#fff0f6; --muted:#c1a7b4; --line:#44313b;
     --on-accent:#382630; --blue:#e69ab7; --green:#82c59a; --pink:#ff8d9e; --orange:#e5b77c; --teal:#8bc6c4;
-  --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247; --sky-bg:#151b24;
+  --blue-t:#452735; --green-t:#20392a; --pink-t:#48232e; --orange-t:#3b2c20; --teal-t:#203637; --gray-t:#392b34; --sky:#8cc4f2; --sky-t:#1f3247;
   --dot-off:rgba(235,235,245,.12); --shadow:none;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink)}
-body{background:linear-gradient(180deg,var(--bg) 0,var(--sky-bg) 100%);min-height:100vh}
 body{font:15px/1.35 Nunito,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
   padding:env(safe-area-inset-top) 0 calc(84px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
@@ -86,7 +85,7 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 #tab-overview .grid{align-items:start;grid-template-columns:minmax(0,1fr)}
 @media(min-width:860px){#tab-overview .grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}}
 .card{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);min-width:0}
-.month-summary{background:linear-gradient(145deg,color-mix(in srgb,var(--blue) 12%,var(--card)),var(--card) 55%,var(--sky-t));border:1px solid color-mix(in srgb,var(--blue) 12%,var(--card));padding:22px}
+.month-summary{background:var(--card);border:1px solid var(--line);padding:22px}
 .month-summary .tiles{margin-top:20px}
 .month-summary .tile{background:color-mix(in srgb,var(--card) 75%,transparent);border:1px solid var(--line)}
 .month-summary .big{margin-top:6px;font-variant-numeric:tabular-nums;flex-wrap:wrap}
@@ -218,14 +217,17 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row{flex-wrap:wrap}
 .row .amt .left{color:var(--ink);font-weight:600}
 .row .amt .of{white-space:nowrap}
-.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;margin:-2px 0 0 38px;background:var(--sky-bg);border-radius:12px;padding:2px 12px}
+.row .dts{flex:0 0 calc(100% - 38px);min-width:0;display:grid;margin:-2px 0 0 38px;background:var(--card2);border-radius:12px;padding:2px 12px}
 .row .dts button{display:flex;align-items:center;gap:10px;width:100%;min-width:0;padding:8px 0;font-size:14px;color:var(--ink);text-align:left;border-top:1px solid var(--line)}
 .row .dts button:first-child{border-top:0}
 .row .dts .paid{color:var(--muted)}
 .row .dts .paid b{text-decoration:line-through}
 .dprog{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);white-space:normal}
-.dbar{display:block;flex:1;height:4px;border-radius:4px;background:var(--gray-t);overflow:hidden;max-width:160px}
-.dbar i{display:block;height:100%;background:var(--green);border-radius:4px}
+.dbar{display:flex;flex:1;height:4px;border-radius:4px;background:var(--gray-t);overflow:hidden;max-width:160px}
+.dbar i{display:block;height:100%;background:var(--green)}
+.dbar i.u{background:color-mix(in srgb,var(--blue) 35%,var(--card))}
+.dprog .over{color:var(--pink);font-weight:700}
+.dprog .nw{white-space:nowrap}
 .row .dts .ck{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
 .row .dts .paid .ck{background:var(--green);border-color:var(--green)}
 .row .dts .dn .t{font-style:normal}
@@ -236,7 +238,9 @@ header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 8
 .row .dts b{flex:none;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
 .dt-sum{margin-top:8px;font-size:13.5px;color:var(--muted)}
 .dt-sum b{color:var(--ink)}
-.amt-in[readonly]{color:var(--muted);background:var(--gray-t)}
+.dt-sum .kv{padding:6px 0;font-size:14px}
+.dt-sum .kv:first-child{border-top:0}
+.dt-sum .warn,.dt-sum .warn b{color:var(--pink)}
 .field .lrow{display:flex;justify-content:space-between;align-items:center}
 .field .lrow button{color:var(--blue);font-weight:600;font-size:13px}
 .field select{width:100%;border:1px solid var(--line);background:var(--card2);border-radius:14px;padding:13px 40px 13px 14px;font:inherit;font-size:16px;color:inherit;outline:none;appearance:none;-webkit-appearance:none;
@@ -296,7 +300,7 @@ nav button.on{color:var(--blue);font-weight:600;background:var(--blue-t)}
 button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 button{touch-action:manipulation}
 .fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:31;width:56px;height:56px;border-radius:50%;
-  background:linear-gradient(135deg,var(--blue),color-mix(in srgb,var(--blue) 55%,var(--sky)));color:var(--on-accent);display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--blue) 30%,transparent)}
+  background:var(--blue);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--blue) 30%,transparent)}
 .fab svg{width:26px;height:26px}
 
 /* sheet */
@@ -686,8 +690,9 @@ function dtName(i, d) {
   return n.slice(p.length).replace(/^[\s\-–—:·|]+/, '') || n;
 }
 // Khoản có chi tiết: số tiền = tổng chi tiết (số nhập tay chỉ dùng khi chưa có chi tiết nào có số tiền)
+// Số tiền ban đầu nhập tay; chi tiết là phần đã tiêu trong khoản. Tiêu lố thì tính theo tổng chi tiết
 const dtSum = i => (i.details || []).reduce((s, d) => s + (Number(d.amount) || 0), 0);
-const amtOf = i => dtSum(i) || Number(i.amount) || 0;
+const amtOf = i => Math.max(Number(i.amount) || 0, dtSum(i));
 // Có chi tiết: tính thực chi theo dấu tích từng dòng, kể cả dữ liệu cũ có trạng thái cha "paid".
 const dtPaid = i => (i.details || []).reduce((s, d) => s + (d.paid ? Number(d.amount) || 0 : 0), 0);
 const hasDetails = i => dtSum(i) > 0;
@@ -811,14 +816,17 @@ function dueTag(i) {
 
 function itemRow(i, k) {
       const part = i.status !== 'skip' && hasDetails(i), s = stOf(i), ds = i.details || [], total = amtOf(i);
+      const base = Number(i.amount) || 0, inDt = dtSum(i), paid = dtPaid(i), pct = n => Math.round(n / total * 100) + '%';
+      const nw = (l, n) => `<span class="nw">${l} ${cstr(n)}</span>`;
+      const diff = !base ? '' : inDt > base ? ` · <span class="over nw">Vượt ${cstr(inDt - base)}</span>` : base > inDt ? ' · ' + nw('Còn dư', base - inDt) : '';
       const dDue = d => !d.paid && Number(d.due);
       return `
       <div class="row ${i.status === 'skip' ? 'skip' : ''}">
         <button class="mid" data-edit="${i.id}" style="display:flex;align-items:center;gap:12px;text-align:left">
           <span class="no">${k + 1}</span>
           <span style="min-width:0;flex:1"><div class="nm">${esc(i.name)}</div>
-            <div class="amt">${part ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>
-            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${Math.round(dtPaid(i) / total * 100)}%"></i></span>Đã chi ${cstr(dtPaid(i))} · Chưa chi ${cstr(remainOf(i))}</span>` : ''}</span>
+            <div class="amt">${part && remainOf(i) ? `<b class="left">${vnd(remainOf(i))}</b> còn <span class="of">/ ${cstr(total)}</span>` : vnd(total)}${ds.length && !part ? ` · ${ds.length} mục` : ''}${i.note ? ' · ' + esc(i.note) : ''}${dueTag(i)}</div>
+            ${part ? `<span class="dprog"><span class="dbar"><i style="width:${pct(paid)}"></i><i class="u" style="width:${pct(inDt - paid)}"></i></span><span>${nw('Chi tiết', inDt)} · ${nw('Đã trả', paid)}${diff}</span></span>` : ''}</span>
         </button>
         <button class="pill ${s.cls}" data-cycle="${i.id}">${s.label}</button>
         ${ds.length ? `<div class="dts">${ds.map(d => `<button class="${d.paid ? 'paid' : ''}" data-edit="${i.id}" aria-label="${esc(d.name)}: ${d.paid ? 'đã trả' : 'chưa trả'} — mở để sửa">
@@ -1244,7 +1252,7 @@ function openEdit(id) {
         <option value="other" ${custom ? 'selected' : ''}>Khác (tự nhập)…</option>
       </select>
       <input id="fName" value="${custom ? esc(it.name) : ''}" placeholder="Nhập tên khoản" ${custom ? '' : 'hidden'} style="margin-top:8px"></div>
-    <div class="field"><label>Số tiền (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${amtOf(it) ? amtOf(it).toLocaleString('vi-VN') : ''}" placeholder="0 · VD 2tr5, 500k"><span class="hint" id="fAmtHint" hidden>Tự tính = tổng các chi tiết bên dưới</span></div>
+    <div class="field"><label>Số tiền ban đầu (đ)</label><input id="fAmt" class="amt-in" inputmode="numeric" value="${Number(it.amount) ? Number(it.amount).toLocaleString('vi-VN') : ''}" placeholder="0 · VD 2tr5, 500k"><span class="hint">Có chi tiết: các món đã tiêu trong số tiền này</span></div>
     <div class="field"><label>Chi tiết <span style="font-weight:400">(không bắt buộc · chạm ○ khi đã trả)</span></label>
       <div id="fDts">${(it.details || []).map(x => dtRow(x, dctx)).join('')}</div>
       <button type="button" class="addrow" id="fDtAdd" style="padding:2px 0 0">+ Thêm chi tiết</button>
@@ -1256,7 +1264,7 @@ function openEdit(id) {
     <div class="acts">${id ? '<button class="btn danger" id="fDel">Xoá</button>' : '<button class="btn ghost" id="fCancel">Huỷ</button>'}<button class="btn" id="fSave">Lưu</button></div>`);
   const amt = $('#fAmt');
   amt.oninput = () => fmtAmt(amt);
-  // Có chi tiết thì số tiền của khoản = tổng chi tiết (khoá ô nhập); dòng nào đã trả thì trừ ra → còn lại
+  // Số tiền ban đầu / tổng chi tiết / đã trả; tiêu lố thì còn phải trả tính theo tổng chi tiết
   const dts = $('#fDts');
   const readDts = () => [...dts.querySelectorAll('.dtw')].map(r => ({
     name: r.querySelector('.nm').value.trim(), amount: parseAmt(r.querySelector('.amt').value), paid: r.querySelector('.pd').classList.contains('on'),
@@ -1265,11 +1273,13 @@ function openEdit(id) {
   const showSum = () => {
     const list = readDts().filter(x => x.name || x.amount);
     const paid = list.reduce((s, x) => s + (x.paid ? x.amount : 0), 0), inDt = list.reduce((s, x) => s + x.amount, 0);
-    amt.readOnly = inDt > 0; $('#fAmtHint').hidden = !inDt;
-    if (inDt) amt.value = inDt.toLocaleString('vi-VN');
-    const total = parseAmt(amt.value);
+    const base = parseAmt(amt.value), total = Math.max(base, inDt);
     $('#fDtSum').hidden = !list.length;
-    $('#fDtSum').innerHTML = `Đã trả <b>${vnd(paid)}</b> · Còn lại <b>${vnd(Math.max(0, total - paid))}</b>`;
+    $('#fDtSum').innerHTML = `<div class="kv"><span>Trong chi tiết</span><b>${vnd(inDt)}</b></div>`
+      + `<div class="kv"><span>Đã trả</span><b>${vnd(paid)}</b></div>`
+      + (base && inDt > base ? `<div class="kv warn"><span>Vượt số tiền ban đầu</span><b>${vnd(inDt - base)}</b></div>`
+        : base > inDt ? `<div class="kv"><span>Còn dư</span><b>${vnd(base - inDt)}</b></div>` : '')
+      + `<div class="kv"><span>Còn phải trả</span><b>${vnd(total - paid)}</b></div>`;
   };
   amt.addEventListener('input', showSum);
   dts.oninput = e => {
