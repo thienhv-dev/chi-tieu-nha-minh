@@ -96,4 +96,7 @@ Trên điện thoại: mở link → Chia sẻ → **Thêm vào MH chính** đ�
 - Link trang và URL Apps Script là public, nhưng đọc/ghi dữ liệu cần **PIN**.
 - PIN nằm trong **Script properties** của Apps Script, không có trong code → push repo public vẫn an toàn.
 - Đây là mức bảo vệ "gia đình": đừng dùng PIN trùng mật khẩu quan trọng.
+- Chống dò PIN: sai quá **10 lần** thì server từ chối mọi yêu cầu (kể cả PIN đúng) trong **15 phút**. Nên đặt PIN ≥ 8 số.
+- **Không chia sẻ file Google Sheet bằng link.** Web app chạy "Execute as: Me" nên Sheet để **Restricted** app vẫn chạy;
+  ai cần mở Sheet trực tiếp thì thêm đúng email người đó trong Share.
 - Đổi PIN: sửa Script property `PIN` (không cần deploy lại) → 2 người nhập lại PIN mới.

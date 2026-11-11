@@ -17,6 +17,7 @@ const ITEM_H = ['id', 'month', 'order', 'name', 'amount', 'status', 'note', 'upd
 const INC_H = ['month', 'name', 'amount', 'updatedAt', 'updatedBy', 'day'];
 const TYPE_H = ['order', 'name', 'amount', 'due', 'updatedAt', 'updatedBy'];
 const MONTH_H = ['month', 'name', 'updatedAt', 'updatedBy'];
+const MAX_FAILS = 10, LOCK_SEC = 900;
 
 // doGet/doPost chỉ chạy khi có request tới URL /exec. Bấm ▶ Run trong editor thì e = undefined.
 function doGet(e) {
@@ -45,7 +46,14 @@ function handle_(p) {
   try {
     const pin = PropertiesService.getScriptProperties().getProperty('PIN');
     if (!pin) return out_({ ok: false, error: 'Chưa đặt PIN trong Script properties' });
-    if (String(p.key) !== pin) return out_({ ok: false, error: 'Sai mã PIN' });
+    // Chống dò PIN: sai quá MAX_FAILS lần thì từ chối mọi yêu cầu (kể cả PIN đúng) trong LOCK_SEC giây
+    const cache = CacheService.getScriptCache(), fails = Number(cache.get('pinFails')) || 0;
+    if (fails >= MAX_FAILS) return out_({ ok: false, error: 'Nhập sai PIN quá nhiều lần, tạm khoá 15 phút' });
+    if (String(p.key) !== pin) {
+      cache.put('pinFails', String(fails + 1), LOCK_SEC);
+      return out_({ ok: false, error: 'Sai mã PIN' });
+    }
+    if (fails) cache.remove('pinFails');
     if (p.action === 'list') return out_(Object.assign({ ok: true }, cachedList_(p.month)));
 
     const lock = LockService.getScriptLock();
